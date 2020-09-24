@@ -34,7 +34,9 @@ public class World {
 						break;
 					case 0xFFFF0000: // VERMELHO
 						// ENEMY
-						Game.entities.add(new Enemy(i * 32, j * 32, 32, 32, Entity.ENEMY_EN));
+						Enemy en = new Enemy(i * 32, j * 32, 32, 32, Entity.ENEMY_EN);
+						Game.entities.add(en);
+						Game.enemies.add(en);
 						break;
 					case 0xFFFFFF00: // AMARELO
 						Game.entities.add(new Manapack(i * 32, j * 32, 32, 32, Entity.MANAPACK_EN));
@@ -48,7 +50,6 @@ public class World {
 						break;
 					case 0xFF0000FF: // AZUL
 						// PLAYER
-						System.out.println("Movendo o Player");
 						Game.player.setX(i * 32);
 						Game.player.setY(j * 32);
 						break;

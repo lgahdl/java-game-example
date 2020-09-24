@@ -1,6 +1,8 @@
 package com.histudio.entities;
 
+import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 import com.gcstudios.world.Camera;
@@ -19,6 +21,8 @@ public class Entity {
 	protected int height;
 
 	protected BufferedImage sprite;
+
+	public int maskx = 8, masky = 8, maskWidth = 12, maskHeight = 16;
 
 	public Entity(int x, int y, int width, int height, BufferedImage sprite) {
 		this.x = x;
@@ -44,11 +48,26 @@ public class Entity {
 		return this.height;
 	}
 
+	public void setMask(int maskx, int masky, int maskWidth, int maskHeight) {
+		this.maskx = maskx;
+		this.masky = masky;
+		this.maskWidth = maskWidth;
+		this.maskHeight = maskHeight;
+	}
+
 	public void tick() {
 
 	}
 
+	public static boolean isColliding(Entity e1, Entity e2) {
+		Rectangle e1Mask = new Rectangle(e1.getX() + e1.maskx, e1.getY() + e1.masky, e1.maskWidth, e1.maskHeight);
+		Rectangle e2Mask = new Rectangle(e2.getX() + e2.maskx, e2.getY() + e2.masky, e2.maskWidth, e2.maskHeight);
+		return e1Mask.intersects(e2Mask);
+	}
+
 	public void render(Graphics g) {
+//		g.setColor(Color.BLUE);
+//		g.fillRect(this.getX() + maskx - Camera.x, this.getY() + masky - Camera.y, this.maskWidth, this.maskHeight);
 		g.drawImage(sprite, this.getX() - Camera.x, this.getY() - Camera.y, null);
 	}
 }

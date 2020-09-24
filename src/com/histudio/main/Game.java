@@ -10,13 +10,16 @@ import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import javax.swing.JFrame;
 
 import com.gcstudios.world.World;
+import com.histudio.entities.Enemy;
 import com.histudio.entities.Entity;
 import com.histudio.entities.Player;
 import com.histudio.graphics.Spritesheet;
+import com.histudio.graphics.UI;
 
 public class Game extends Canvas implements Runnable, KeyListener {
 
@@ -34,6 +37,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	private BufferedImage image;
 
 	public static List<Entity> entities;
+	public static List<Enemy> enemies;
 
 	public static Spritesheet spritesheet;
 
@@ -41,19 +45,26 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
 	public static Player player;
 
+	public static Random rand;
+
+	public static UI ui;
+
 	public Game() {
 		addKeyListener(this);
 		setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
 		initFrame();
-		
+
 		// Inicializando Objetos
 
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
 		entities = new ArrayList<Entity>();
+		enemies = new ArrayList<Enemy>();
 		spritesheet = new Spritesheet("/spritesheet.png");
 		player = new Player(0, 0, 32, 32, spritesheet.getSprite(64, 0, 32, 32));
 		entities.add(player);
 		world = new World("/map.png");
+		rand = new Random();
+		ui = new UI();
 	}
 
 	private void initFrame() {
@@ -90,10 +101,12 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	}
 
 	public void tick() {
+		if (this.player.getLife() <= 0) {
+			this.gameOver();
+		}
 		for (int i = 0; i < entities.size(); i++) {
 			Entity e = entities.get(i);
 			if (e instanceof Player) {
-				// Estou dando tick no player
 			}
 			e.tick();
 		}
@@ -118,6 +131,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
 			Entity e = entities.get(i);
 			e.render(g);
 		}
+		ui.render(g);
 		/***/
 		g.dispose();
 		g = bs.getDrawGraphics();
@@ -146,13 +160,23 @@ public class Game extends Canvas implements Runnable, KeyListener {
 			}
 
 			if (System.currentTimeMillis() - timer >= 1000) {
-				System.out.println("FPS: " + frames);
+//				System.out.println("FPS: " + frames);
 				frames = 0;
 				timer += 1000;
 			}
 		}
 
 		stop();
+	}
+
+	public static void gameOver() {
+		entities = new ArrayList<Entity>();
+		enemies = new ArrayList<Enemy>();
+		spritesheet = new Spritesheet("/spritesheet.png");
+		player = new Player(0, 0, 32, 32, spritesheet.getSprite(64, 0, 32, 32));
+		entities.add(player);
+		world = new World("/map.png");
+		return;
 	}
 
 	@Override
