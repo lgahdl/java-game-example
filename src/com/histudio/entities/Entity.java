@@ -5,8 +5,8 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
-import com.gcstudios.world.Camera;
 import com.histudio.main.Game;
+import com.histudio.world.Camera;
 
 public class Entity {
 

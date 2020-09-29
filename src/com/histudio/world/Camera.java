@@ -1,4 +1,4 @@
-package com.gcstudios.world;
+package com.histudio.world;
 
 public class Camera {
 	public static int x;

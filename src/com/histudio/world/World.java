@@ -1,4 +1,4 @@
-package com.gcstudios.world;
+package com.histudio.world;
 
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;

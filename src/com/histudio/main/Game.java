@@ -17,8 +17,6 @@ import java.util.Random;
 
 import javax.swing.JFrame;
 
-import com.gcstudios.world.Camera;
-import com.gcstudios.world.World;
 import com.histudio.entities.Enemy;
 import com.histudio.entities.Entity;
 import com.histudio.entities.FireballShoot;
@@ -26,6 +24,8 @@ import com.histudio.entities.Player;
 import com.histudio.entities.Weapon;
 import com.histudio.graphics.Spritesheet;
 import com.histudio.graphics.UI;
+import com.histudio.world.Camera;
+import com.histudio.world.World;
 
 public class Game extends Canvas implements Runnable, KeyListener, MouseListener {
 

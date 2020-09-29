@@ -5,9 +5,9 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
-import com.gcstudios.world.Camera;
-import com.gcstudios.world.World;
 import com.histudio.main.Game;
+import com.histudio.world.Camera;
+import com.histudio.world.World;
 
 public class Enemy extends Entity {
 
