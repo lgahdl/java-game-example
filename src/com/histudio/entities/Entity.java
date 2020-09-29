@@ -60,9 +60,11 @@ public class Entity {
 	}
 
 	public static boolean isColliding(Entity e1, Entity e2) {
-		Rectangle e1Mask = new Rectangle(e1.getX() + e1.maskx, e1.getY() + e1.masky, e1.maskWidth, e1.maskHeight);
-		Rectangle e2Mask = new Rectangle(e2.getX() + e2.maskx, e2.getY() + e2.masky, e2.maskWidth, e2.maskHeight);
-		return e1Mask.intersects(e2Mask);
+		Rectangle e1Mask = new Rectangle(e1.getX() + e1.maskx - Camera.x, e1.getY() + e1.masky - Camera.y, e1.maskWidth,
+				e1.maskHeight);
+		Rectangle e2Mask = new Rectangle(e2.getX() + e2.maskx - Camera.x, e2.getY() + e2.masky - Camera.y, e2.maskWidth,
+				e2.maskHeight);
+		return e2Mask.intersects(e1Mask);
 	}
 
 	public void render(Graphics g) {

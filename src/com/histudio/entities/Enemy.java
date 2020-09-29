@@ -13,14 +13,18 @@ public class Enemy extends Entity {
 
 	private double speed = 0.8;
 
-	private int maskx = 8, masky = 8, maskWidth = 16, maskHeight = 24;
+	public int maskx = 8, masky = 16, maskWidth = 16, maskHeight = 24;
 
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 4;
 
-	private int damage = 10, framesToDamage = 15, damageFrames = 0;
+	private int damage = 10, framesToDamage = 15, currentFrameToDamage = 0;
 
 	private boolean moved = false;
 	private BufferedImage[] sprites;
+	private BufferedImage feedbackSprite;
+	private boolean isDamaged = false;
+	private int maxDamageFrames = 10, damageFrames = 0;
+	public int life = 3;
 
 	public Enemy(int x, int y, int width, int height, BufferedImage sprite) {
 		super(x, y, width, height, null);
@@ -29,11 +33,17 @@ public class Enemy extends Entity {
 		sprites[1] = Game.spritesheet.getSprite(256, 32, 32, 32);
 		sprites[2] = Game.spritesheet.getSprite(224, 64, 32, 32);
 		sprites[3] = Game.spritesheet.getSprite(256, 64, 32, 32);
+		feedbackSprite = Game.spritesheet.getSprite(288, 32, 32, 32);
 		// TODO Auto-generated constructor stub
 	}
 
 	public void tick() {
 		moved = false;
+		if (life <= 0) {
+			Game.entities.remove(this);
+			Game.enemies.remove(this);
+		}
+		this.collidingFireball();
 		if (isCollidingWithPlayer() == false) {
 
 			if ((int) x < Game.player.getX() && World.isFree((int) (x + speed), this.getY())
@@ -55,9 +65,9 @@ public class Enemy extends Entity {
 				moved = true;
 			}
 		} else {
-			damageFrames++;
-			if (damageFrames >= framesToDamage) {
-				damageFrames = 0;
+			currentFrameToDamage++;
+			if (currentFrameToDamage >= framesToDamage) {
+				currentFrameToDamage = 0;
 				Game.player.setLife(Game.player.getLife() - this.damage);
 				Game.player.setDamaged(true);
 			}
@@ -73,6 +83,26 @@ public class Enemy extends Entity {
 			}
 		}
 
+		if (isDamaged) {
+			damageFrames++;
+			if (damageFrames >= maxDamageFrames) {
+				damageFrames = 0;
+				isDamaged = false;
+			}
+		}
+
+	}
+
+	public void collidingFireball() {
+		for (int i = 0; i < Game.fireballs.size(); i++) {
+			Entity e = Game.fireballs.get(i);
+			if (Entity.isColliding(this, e)) {
+				life--;
+				this.isDamaged = true;
+				Game.fireballs.remove(i);
+				return;
+			}
+		}
 	}
 
 	public boolean isCollidingWithPlayer() {
@@ -100,9 +130,11 @@ public class Enemy extends Entity {
 
 	@Override
 	public void render(Graphics g) {
-		g.drawImage(sprites[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
-//		g.setColor(Color.BLUE);
-//		g.fillRect(this.getX() + maskx - Camera.x, this.getY() + masky - Camera.y, maskWidth, maskHeight);
+		if (!isDamaged) {
+			g.drawImage(sprites[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+		} else {
+			g.drawImage(feedbackSprite, this.getX() - Camera.x, this.getY() - Camera.y, null);
+		}
 	}
 
 }

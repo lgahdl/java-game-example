@@ -29,11 +29,17 @@ public class Player extends Entity {
 
 	private double life = 100, maxLife = 100;
 
-	private double mana = 20, maxMana = 100;
+	private double mana = 70, maxMana = 100;
 
 	private int damageFrames = 0, maxDamageFrames = 20;
 
 	private Weapon weapon;
+
+	private String lastPressedMovementKey = "right";
+
+	public boolean shoot = false, mouseShoot = false;
+
+	public int mx, my;
 
 	public Player(int x, int y, int width, int height, BufferedImage sprite) {
 		super(x, y, width, height, sprite);
@@ -104,6 +110,21 @@ public class Player extends Entity {
 		this.damaged = value;
 	}
 
+	public void setShoot(boolean value) {
+		if (this.weapon instanceof Weapon && this.mana >= 2) {
+			this.shoot = value;
+		}
+
+	}
+
+	public void setMouseShoot(boolean value) {
+
+		if (this.weapon instanceof Weapon && this.mana >= 2) {
+			this.mouseShoot = value;
+		}
+
+	}
+
 	public Weapon getWeapon() {
 		return this.weapon;
 	}
@@ -117,19 +138,23 @@ public class Player extends Entity {
 		moved = false;
 		double movingSpeed = speed * (isRunning ? 2 : 1);
 		if (right && World.isFree(this.getX() + (int) (movingSpeed), this.getY())) {
+			this.lastPressedMovementKey = "right";
 			moved = true;
 			isRight = true;
 			x += movingSpeed;
 		} else if (left && World.isFree(this.getX() - (int) (movingSpeed), this.getY())) {
+			this.lastPressedMovementKey = "left";
 			moved = true;
 			isRight = false;
 			x -= movingSpeed;
 		}
 		if (up && World.isFree(this.getX(), this.getY() - (int) (movingSpeed))) {
+			this.lastPressedMovementKey = "up";
 			moved = true;
 			isUp = true;
 			y -= movingSpeed;
 		} else if (down && World.isFree(this.getX(), this.getY() + (int) (movingSpeed))) {
+			this.lastPressedMovementKey = "down";
 			moved = true;
 			isUp = false;
 			y += movingSpeed;
@@ -154,6 +179,40 @@ public class Player extends Entity {
 				this.damageFrames = 0;
 				damaged = false;
 			}
+		}
+
+		if (shoot) {
+			shoot = false;
+			this.mana -= 2;
+			int dx = this.lastPressedMovementKey == "right" ? 1 : this.lastPressedMovementKey == "left" ? -1 : 0;
+			int dy = this.lastPressedMovementKey == "up" ? -1 : this.lastPressedMovementKey == "down" ? 1 : 0;
+			;
+			if (right && !left) {
+				dx = 1;
+			}
+			if (left && !right) {
+				dx = -1;
+			}
+			if (up && !down) {
+				dy = -1;
+			}
+			if (down && !up) {
+				dy = 1;
+			}
+
+			FireballShoot fireball = new FireballShoot(this.getX() + 12, this.getY() + 12, 6, 6, null, dx, dy);
+			Game.fireballs.add(fireball);
+		}
+		if (mouseShoot) {
+			mouseShoot = false;
+			double angle = Math.atan2(this.my - (this.getY()+16-Camera.y), this.mx - (this.getX()+16-Camera.x));
+			this.mana -= 2;
+			double dx = Math.cos(angle);
+			double dy = Math.sin(angle);
+			int px = 12;
+			int py = 12;
+			FireballShoot fireball = new FireballShoot(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy);
+			Game.fireballs.add(fireball);
 		}
 
 		Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 32 - Game.WIDTH);

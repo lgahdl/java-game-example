@@ -4,8 +4,11 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -14,14 +17,17 @@ import java.util.Random;
 
 import javax.swing.JFrame;
 
+import com.gcstudios.world.Camera;
 import com.gcstudios.world.World;
 import com.histudio.entities.Enemy;
 import com.histudio.entities.Entity;
+import com.histudio.entities.FireballShoot;
 import com.histudio.entities.Player;
+import com.histudio.entities.Weapon;
 import com.histudio.graphics.Spritesheet;
 import com.histudio.graphics.UI;
 
-public class Game extends Canvas implements Runnable, KeyListener {
+public class Game extends Canvas implements Runnable, KeyListener, MouseListener {
 
 	/**
 	 * 
@@ -32,12 +38,13 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	private boolean isRunning;
 	public static int WIDTH = 500;
 	public static int HEIGHT = 250;
-	private final int SCALE = 3;
+	public final static int SCALE = 3;
 
 	private BufferedImage image;
 
 	public static List<Entity> entities;
 	public static List<Enemy> enemies;
+	public static List<FireballShoot> fireballs;
 
 	public static Spritesheet spritesheet;
 
@@ -49,8 +56,11 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
 	public static UI ui;
 
+	public static String gameState = "PLAYING";
+
 	public Game() {
 		addKeyListener(this);
+		addMouseListener(this);
 		setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
 		initFrame();
 
@@ -59,6 +69,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
 		entities = new ArrayList<Entity>();
 		enemies = new ArrayList<Enemy>();
+		fireballs = new ArrayList<FireballShoot>();
 		spritesheet = new Spritesheet("/spritesheet.png");
 		player = new Player(0, 0, 32, 32, spritesheet.getSprite(64, 0, 32, 32));
 		entities.add(player);
@@ -101,16 +112,43 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	}
 
 	public void tick() {
-		if (this.player.getLife() <= 0) {
-			this.gameOver();
-		}
-		for (int i = 0; i < entities.size(); i++) {
-			Entity e = entities.get(i);
-			if (e instanceof Player) {
-			}
-			e.tick();
-		}
+		if (gameState == "PLAYING") {
 
+			if (this.player.getLife() <= 0) {
+				this.gameState = "GAMEOVER";
+			}
+
+			if (enemies.size() == 0) {
+				this.startNewLevel("/map2.png");
+			}
+
+			for (int i = 0; i < entities.size(); i++) {
+				Entity e = entities.get(i);
+				if (e instanceof Player) {
+				}
+				e.tick();
+			}
+
+			for (int i = 0; i < fireballs.size(); i++) {
+				fireballs.get(i).tick();
+			}
+		}
+		else if(gameState=="GAMEOVER") {
+			
+		}
+	}
+
+	public void startNewLevel(String path) {
+		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
+		entities = new ArrayList<Entity>();
+		enemies = new ArrayList<Enemy>();
+		fireballs = new ArrayList<FireballShoot>();
+		spritesheet = new Spritesheet("/spritesheet.png");
+		player = new Player(0, 0, 32, 32, spritesheet.getSprite(64, 0, 32, 32));
+		entities.add(player);
+		world = new World(path);
+		rand = new Random();
+		ui = new UI();
 	}
 
 	public void render() {
@@ -125,17 +163,23 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		g.setColor(new Color(25, 10, 100));
 		g.fillRect(0, 0, WIDTH, HEIGHT);
 
-		/* RENDERIZA��O DO JOGO */
+		/* RENDERIZANDO DO JOGO */
 		world.render(g);
 		for (int i = 0; i < entities.size(); i++) {
 			Entity e = entities.get(i);
 			e.render(g);
+		}
+		for (int i = 0; i < fireballs.size(); i++) {
+			fireballs.get(i).render(g);
 		}
 		ui.render(g);
 		/***/
 		g.dispose();
 		g = bs.getDrawGraphics();
 		g.drawImage(image, 0, 0, WIDTH * SCALE, HEIGHT * SCALE, null);
+		if (gameState == "GAMEOVER") {
+
+		}
 		bs.show();
 	}
 
@@ -169,16 +213,6 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		stop();
 	}
 
-	public static void gameOver() {
-		entities = new ArrayList<Entity>();
-		enemies = new ArrayList<Enemy>();
-		spritesheet = new Spritesheet("/spritesheet.png");
-		player = new Player(0, 0, 32, 32, spritesheet.getSprite(64, 0, 32, 32));
-		entities.add(player);
-		world = new World("/map.png");
-		return;
-	}
-
 	@Override
 	public void keyTyped(KeyEvent e) {
 		// TODO Auto-generated method stub
@@ -201,6 +235,9 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
 			player.isRunning = true;
 		}
+		if (e.getKeyCode() == KeyEvent.VK_K) {
+			player.setShoot(true);
+		}
 	}
 
 	@Override
@@ -219,5 +256,37 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
 			player.isRunning = false;
 		}
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		player.mx = (e.getX() / 3);
+		player.my = (e.getY() / 3);
+		player.setMouseShoot(true);
+
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+
 	}
 }
