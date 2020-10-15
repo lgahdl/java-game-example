@@ -1,9 +1,11 @@
 package com.histudio.entities;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
 import com.histudio.main.Game;
+import com.histudio.main.Sound;
 import com.histudio.world.Camera;
 import com.histudio.world.World;
 
@@ -13,17 +15,17 @@ public class Player extends Entity {
 
 	public double speed = 1;
 
-	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 4;
+	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 7;
 	private boolean moved = false;
 	private boolean damaged = false;
 
-	private BufferedImage[] rightPlayerFront;
+	private BufferedImage[] frontPlayer;
 
-	private BufferedImage[] leftPlayerFront;
+	private BufferedImage[] leftPlayer;
 
-	private BufferedImage[] rightPlayerBack;
+	private BufferedImage[] rightPlayer;
 
-	private BufferedImage[] leftPlayerBack;
+	private BufferedImage[] upPlayer;
 
 	public BufferedImage[] playerDamaged;
 
@@ -39,50 +41,32 @@ public class Player extends Entity {
 
 	public boolean shoot = false, mouseShoot = false;
 
+	private boolean jump = false, isJumping = false;
+
+	private int jumpFrames = 50, jumpCur = 0, jumpSpeed = 3;
+	private int z = 0;
+	private boolean zTop = false;
+
 	public int mx, my;
 
 	public Player(int x, int y, int width, int height, BufferedImage sprite) {
 		super(x, y, width, height, sprite);
-		rightPlayerFront = new BufferedImage[4];
-		leftPlayerFront = new BufferedImage[4];
-		rightPlayerBack = new BufferedImage[4];
-		leftPlayerBack = new BufferedImage[4];
-		playerDamaged = new BufferedImage[4];
-		for (int i = 0; i < 4; i++) {
-			rightPlayerFront[i] = Game.spritesheet.getSprite(64 + 32 * i, 0, 32, 32);
-			leftPlayerFront[i] = Game.spritesheet.getSprite(64 + 32 * i, 32, 32, 32);
-			rightPlayerBack[i] = Game.spritesheet.getSprite(64 + 32 * i, 64, 32, 32);
-			leftPlayerBack[i] = Game.spritesheet.getSprite(64 + 32 * i, 96, 32, 32);
-			playerDamaged[i] = Game.spritesheet.getSprite(64 + 32 * i, 128, 32, 32);
+		frontPlayer = new BufferedImage[8];
+		leftPlayer = new BufferedImage[8];
+		rightPlayer = new BufferedImage[8];
+		upPlayer = new BufferedImage[8];
+		playerDamaged = new BufferedImage[8];
+		for (int i = 0; i < 8; i++) {
+			frontPlayer[i] = Game.playerSpritesheet.getSprite(32 * i, 0, 32, 32);
+			rightPlayer[i] = Game.playerSpritesheet.getSprite(32 * i, 32, 32, 32);
+			leftPlayer[i] = Game.playerSpritesheet.getSprite(32 * i, 64, 32, 32);
+			upPlayer[i] = Game.playerSpritesheet.getSprite(32 * i, 96, 32, 32);
+			playerDamaged[i] = Game.playerSpritesheet.getSprite(0, 0, 32, 32);
 		}
 	}
 
 	public double getLife() {
 		return this.life;
-	}
-
-	public double getMaxLife() {
-		return this.maxLife;
-	}
-
-	public double getMana() {
-		return this.mana;
-	}
-
-	public double getMaxMana() {
-		return this.maxMana;
-	}
-
-	public void setMaxMana(double newMaxMana) {
-		this.maxMana = newMaxMana;
-	}
-
-	public void setMana(double newMana) {
-		if (newMana <= this.maxMana) {
-			this.mana = newMana;
-		} else {
-			this.mana = this.maxMana;
-		}
 	}
 
 	public void setLife(double newLife) {
@@ -94,8 +78,50 @@ public class Player extends Entity {
 
 	}
 
+	public double getMaxLife() {
+		return this.maxLife;
+	}
+
 	public void setMaxLife(double newMaxLife) {
 		this.maxLife = newMaxLife;
+	}
+
+	public double getMana() {
+		return this.mana;
+	}
+
+	public void setMana(double newMana) {
+		if (newMana <= this.maxMana) {
+			this.mana = newMana;
+		} else {
+			this.mana = this.maxMana;
+		}
+	}
+
+	public double getMaxMana() {
+		return this.maxMana;
+	}
+
+	public void setMaxMana(double newMaxMana) {
+		this.maxMana = newMaxMana;
+	}
+
+	public boolean getJump() {
+		return this.jump;
+	}
+
+	public void setJump(boolean value) {
+		this.jump = value;
+		return;
+	}
+
+	public boolean getIsJumping() {
+		return this.isJumping;
+	}
+
+	public void setIsJumping(boolean value) {
+		this.isJumping = value;
+		return;
 	}
 
 	public void setX(int x) {
@@ -111,15 +137,14 @@ public class Player extends Entity {
 	}
 
 	public void setShoot(boolean value) {
-		if (this.weapon instanceof Weapon && this.mana >= 2) {
+		if (this.weapon instanceof Weapon && this.mana >= 2 && !this.isJumping) {
 			this.shoot = value;
 		}
-
 	}
 
 	public void setMouseShoot(boolean value) {
 
-		if (this.weapon instanceof Weapon && this.mana >= 2) {
+		if (this.weapon instanceof Weapon && this.mana >= 2 && !this.isJumping) {
 			this.mouseShoot = value;
 		}
 
@@ -133,31 +158,72 @@ public class Player extends Entity {
 		this.weapon = weapon;
 	}
 
+	public void takeDamage(int damage) {
+		this.setLife(this.life - damage);
+		this.setDamaged(true);
+		Sound.playerDamaged.play();
+	}
+
 	@Override
 	public void tick() {
 		moved = false;
 		double movingSpeed = speed * (isRunning ? 2 : 1);
-		if (right && World.isFree(this.getX() + (int) (movingSpeed), this.getY())) {
-			this.lastPressedMovementKey = "right";
-			moved = true;
-			isRight = true;
-			x += movingSpeed;
-		} else if (left && World.isFree(this.getX() - (int) (movingSpeed), this.getY())) {
-			this.lastPressedMovementKey = "left";
-			moved = true;
-			isRight = false;
-			x -= movingSpeed;
+		if (jump) {
+			if (this.getIsJumping() == false) {
+				this.setJump(false);
+				this.setIsJumping(true);
+			}
 		}
-		if (up && World.isFree(this.getX(), this.getY() - (int) (movingSpeed))) {
+
+		if (this.isJumping == true) {
+			if (zTop == false) {
+				jumpCur += jumpSpeed;
+			} else if (zTop == true) {
+				jumpCur -= jumpSpeed;
+			}
+			z = jumpCur;
+			if (jumpFrames <= jumpCur) {
+				zTop = true;
+			}
+			if (z <= 0 && zTop == true) {
+				zTop = false;
+				isJumping = false;
+			}
+		}
+
+		if (right) {
+			this.lastPressedMovementKey = "right";
+			isRight = true;
+			if (World.isFree(this.getX() + (int) (movingSpeed), this.getY())
+					|| (!World.isBorder(this.getX() + (int) (movingSpeed), this.getY()) && this.getIsJumping())) {
+				moved = true;
+				x += movingSpeed;
+			}
+		} else if (left) {
+			this.lastPressedMovementKey = "left";
+			isRight = false;
+			if (World.isFree(this.getX() - (int) (movingSpeed), this.getY())
+					|| (!World.isBorder(this.getX() - (int) (movingSpeed), this.getY()) && this.getIsJumping())) {
+				moved = true;
+				x -= movingSpeed;
+			}
+		}
+		if (up) {
 			this.lastPressedMovementKey = "up";
-			moved = true;
 			isUp = true;
-			y -= movingSpeed;
-		} else if (down && World.isFree(this.getX(), this.getY() + (int) (movingSpeed))) {
+			if (World.isFree(this.getX(), this.getY() - (int) (movingSpeed))
+					|| (!World.isBorder(this.getX(), this.getY() - (int) (movingSpeed)) && this.getIsJumping())) {
+				moved = true;
+				y -= movingSpeed;
+			}
+		} else if (down) {
 			this.lastPressedMovementKey = "down";
-			moved = true;
 			isUp = false;
-			y += movingSpeed;
+			if (World.isFree(this.getX(), this.getY() + (int) (movingSpeed))
+					|| (!World.isBorder(this.getX(), this.getY() + (int) (movingSpeed)) && this.getIsJumping())) {
+				moved = true;
+				y += movingSpeed;
+			}
 		}
 		if (moved) {
 			frames++;
@@ -186,7 +252,7 @@ public class Player extends Entity {
 			this.mana -= 2;
 			int dx = this.lastPressedMovementKey == "right" ? 1 : this.lastPressedMovementKey == "left" ? -1 : 0;
 			int dy = this.lastPressedMovementKey == "up" ? -1 : this.lastPressedMovementKey == "down" ? 1 : 0;
-			;
+
 			if (right && !left) {
 				dx = 1;
 			}
@@ -199,13 +265,12 @@ public class Player extends Entity {
 			if (down && !up) {
 				dy = 1;
 			}
-
-			FireballShoot fireball = new FireballShoot(this.getX() + 12, this.getY() + 12, 6, 6, null, dx, dy);
+			FireballShoot fireball = new FireballShoot(this.getX() + 12, this.getY() + 32, 6, 6, null, dx, dy);
 			Game.fireballs.add(fireball);
 		}
 		if (mouseShoot) {
 			mouseShoot = false;
-			double angle = Math.atan2(this.my - (this.getY()+16-Camera.y), this.mx - (this.getX()+16-Camera.x));
+			double angle = Math.atan2(this.my - (this.getY() + 16 - Camera.y), this.mx - (this.getX() + 16 - Camera.x));
 			this.mana -= 2;
 			double dx = Math.cos(angle);
 			double dy = Math.sin(angle);
@@ -215,6 +280,11 @@ public class Player extends Entity {
 			Game.fireballs.add(fireball);
 		}
 
+		setCamera();
+
+	}
+
+	public void setCamera() {
 		Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 32 - Game.WIDTH);
 		Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.HEIGHT * 32 - Game.HEIGHT);
 	}
@@ -222,102 +292,155 @@ public class Player extends Entity {
 	@Override
 	public void render(Graphics g) {
 		int positionX = this.getX() - Camera.x;
-		int positionY = this.getY() - Camera.y;
-		if (!damaged) {
-
-			if (isRight) {
-				if (isUp) {
-					if (right || up) {
-						g.drawImage(rightPlayerBack[index], positionX, positionY, null);
-						if (this.weapon instanceof Weapon) {
-							BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
-							g.drawImage(weaponSprites[index], positionX, positionY, null);
-						}
-					} else {
-						g.drawImage(rightPlayerBack[0], positionX, positionY, null);
-						if (this.weapon instanceof Weapon) {
-							BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
-							g.drawImage(weaponSprites[0], positionX, positionY, null);
-						}
-					}
-
-				} else {
-					if (right || down) {
-						g.drawImage(rightPlayerFront[index], positionX, positionY, null);
-						if (this.weapon instanceof Weapon) {
-							BufferedImage[] weaponSprites = this.weapon.getFrontRightSprites();
-							g.drawImage(weaponSprites[index], positionX, positionY, null);
-						}
-					} else {
-						g.drawImage(rightPlayerFront[0], positionX, positionY, null);
-						if (this.weapon instanceof Weapon) {
-							BufferedImage[] weaponSprites = this.weapon.getFrontRightSprites();
-							g.drawImage(weaponSprites[0], positionX, positionY, null);
-						}
-					}
-				}
-			} else {
-				if (isUp) {
-					if (left || up) {
-						g.drawImage(leftPlayerBack[index], positionX, positionY, null);
-						if (this.weapon instanceof Weapon) {
-							BufferedImage[] weaponSprites = this.weapon.getBackLeftSprites();
-							g.drawImage(weaponSprites[index], positionX, positionY, null);
-						}
-					} else {
-						g.drawImage(leftPlayerBack[0], positionX, positionY, null);
-						if (this.weapon instanceof Weapon) {
-							BufferedImage[] weaponSprites = this.weapon.getBackLeftSprites();
-							g.drawImage(weaponSprites[0], positionX, positionY, null);
-						}
-					}
-				} else {
-					if (left || down) {
-						g.drawImage(leftPlayerFront[index], positionX, positionY, null);
-						if (this.weapon instanceof Weapon) {
-							BufferedImage[] weaponSprites = this.weapon.getFrontLeftSprites();
-							g.drawImage(weaponSprites[index], positionX, positionY, null);
-						}
-					} else {
-						g.drawImage(leftPlayerFront[0], positionX, positionY, null);
-						if (this.weapon instanceof Weapon) {
-							BufferedImage[] weaponSprites = this.weapon.getFrontLeftSprites();
-							g.drawImage(weaponSprites[0], positionX, positionY, null);
-						}
-					}
-				}
-			}
-		} else {
-			if (isRight) {
-				if (isUp) {
-					g.drawImage(playerDamaged[2], positionX, positionY, null);
-					if (this.weapon instanceof Weapon) {
-						BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
-						g.drawImage(weaponSprites[0], positionX, positionY, null);
-					}
-				} else {
-					g.drawImage(playerDamaged[0], positionX, positionY, null);
-					if (this.weapon instanceof Weapon) {
-						BufferedImage[] weaponSprites = this.weapon.getFrontRightSprites();
-						g.drawImage(weaponSprites[0], positionX, positionY, null);
-					}
-				}
-			} else {
-				if (isUp) {
-					g.drawImage(playerDamaged[3], positionX, positionY, null);
-					if (this.weapon instanceof Weapon) {
-						BufferedImage[] weaponSprites = this.weapon.getBackLeftSprites();
-						g.drawImage(weaponSprites[0], positionX, positionY, null);
-					}
-				} else {
-					g.drawImage(playerDamaged[1], positionX, positionY, null);
-					if (this.weapon instanceof Weapon) {
-						BufferedImage[] weaponSprites = this.weapon.getFrontLeftSprites();
-						g.drawImage(weaponSprites[0], positionX, positionY, null);
-					}
-				}
-			}
+		int positionY = this.getY() - Camera.y - z;
+		if (isJumping) {
+			g.setColor(Color.BLACK);
+			g.fillOval(positionX + 8, positionY + z + 16, 15, 10);
 		}
+		switch (lastPressedMovementKey) {
+		case "right":
+			if (right) {
+				g.drawImage(rightPlayer[index], positionX, positionY, null);
+				if (this.weapon instanceof Weapon) {
+					BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
+					g.drawImage(weaponSprites[index < 4 ? index : 0], positionX, positionY, null);
+				}
+			} else {
+				g.drawImage(rightPlayer[0], positionX, positionY, null);
+			}
+			break;
+		case "left":
+			if (left) {
+				g.drawImage(leftPlayer[index], positionX, positionY, null);
+				if (this.weapon instanceof Weapon) {
+					BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
+					g.drawImage(weaponSprites[index < 4 ? index : 0], positionX, positionY, null);
+				}
+			} else {
+				g.drawImage(leftPlayer[0], positionX, positionY, null);
+			}
+			break;
+		case "up":
+			if (up) {
+				g.drawImage(upPlayer[index], positionX, positionY, null);
+				if (this.weapon instanceof Weapon) {
+					BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
+					g.drawImage(weaponSprites[index < 4 ? index : 0], positionX, positionY, null);
+				}
+			} else {
+				g.drawImage(upPlayer[0], positionX, positionY, null);
+			}
+			break;
+		case "down":
+			if (down) {
+				g.drawImage(frontPlayer[index], positionX, positionY, null);
+				if (this.weapon instanceof Weapon) {
+					BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
+					g.drawImage(weaponSprites[index < 4 ? index : (index - index / 2)], positionX, positionY, null);
+				}
+			} else {
+				g.drawImage(frontPlayer[0], positionX, positionY, null);
+			}
+			break;
+		default:
+			break;
+		}
+
+//		if (!damaged) {
+//
+//			if (isRight) {
+//				if (isUp) {
+//					if (right || up) {
+//						g.drawImage(rightPlayerBack[index], positionX, positionY, null);
+//						if (this.weapon instanceof Weapon) {
+//							BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
+//							g.drawImage(weaponSprites[index], positionX, positionY, null);
+//						}
+//					} else {
+//						g.drawImage(rightPlayerBack[0], positionX, positionY, null);
+//						if (this.weapon instanceof Weapon) {
+//							BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
+//							g.drawImage(weaponSprites[0], positionX, positionY, null);
+//						}
+//					}
+//
+//				} else {
+//					if (right || down) {
+//						g.drawImage(rightPlayerFront[index], positionX, positionY, null);
+//						if (this.weapon instanceof Weapon) {
+//							BufferedImage[] weaponSprites = this.weapon.getFrontRightSprites();
+//							g.drawImage(weaponSprites[index], positionX, positionY, null);
+//						}
+//					} else {
+//						g.drawImage(rightPlayerFront[0], positionX, positionY, null);
+//						if (this.weapon instanceof Weapon) {
+//							BufferedImage[] weaponSprites = this.weapon.getFrontRightSprites();
+//							g.drawImage(weaponSprites[0], positionX, positionY, null);
+//						}
+//					}
+//				}
+//			} else {
+//				if (isUp) {
+//					if (left || up) {
+//						g.drawImage(leftPlayerBack[index], positionX, positionY, null);
+//						if (this.weapon instanceof Weapon) {
+//							BufferedImage[] weaponSprites = this.weapon.getBackLeftSprites();
+//							g.drawImage(weaponSprites[index], positionX, positionY, null);
+//						}
+//					} else {
+//						g.drawImage(leftPlayerBack[0], positionX, positionY, null);
+//						if (this.weapon instanceof Weapon) {
+//							BufferedImage[] weaponSprites = this.weapon.getBackLeftSprites();
+//							g.drawImage(weaponSprites[0], positionX, positionY, null);
+//						}
+//					}
+//				} else {
+//					if (left || down) {
+//						g.drawImage(leftPlayerFront[index], positionX, positionY, null);
+//						if (this.weapon instanceof Weapon) {
+//							BufferedImage[] weaponSprites = this.weapon.getFrontLeftSprites();
+//							g.drawImage(weaponSprites[index], positionX, positionY, null);
+//						}
+//					} else {
+//						g.drawImage(leftPlayerFront[0], positionX, positionY, null);
+//						if (this.weapon instanceof Weapon) {
+//							BufferedImage[] weaponSprites = this.weapon.getFrontLeftSprites();
+//							g.drawImage(weaponSprites[0], positionX, positionY, null);
+//						}
+//					}
+//				}
+//			}
+//		} else {
+//			if (isRight) {
+//				if (isUp) {
+//					g.drawImage(playerDamaged[2], positionX, positionY, null);
+//					if (this.weapon instanceof Weapon) {
+//						BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
+//						g.drawImage(weaponSprites[0], positionX, positionY, null);
+//					}
+//				} else {
+//					g.drawImage(playerDamaged[0], positionX, positionY, null);
+//					if (this.weapon instanceof Weapon) {
+//						BufferedImage[] weaponSprites = this.weapon.getFrontRightSprites();
+//						g.drawImage(weaponSprites[0], positionX, positionY, null);
+//					}
+//				}
+//			} else {
+//				if (isUp) {
+//					g.drawImage(playerDamaged[3], positionX, positionY, null);
+//					if (this.weapon instanceof Weapon) {
+//						BufferedImage[] weaponSprites = this.weapon.getBackLeftSprites();
+//						g.drawImage(weaponSprites[0], positionX, positionY, null);
+//					}
+//				} else {
+//					g.drawImage(playerDamaged[1], positionX, positionY, null);
+//					if (this.weapon instanceof Weapon) {
+//						BufferedImage[] weaponSprites = this.weapon.getFrontLeftSprites();
+//						g.drawImage(weaponSprites[0], positionX, positionY, null);
+//					}
+//				}
+//			}
+//		}
 
 	}
 

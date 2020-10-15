@@ -14,8 +14,6 @@ public class Manapack extends Entity {
 	}
 
 	public void manaRegen(Player player) {
-		System.out.println(player.getMana());
-		System.out.println(this.manaPoints);
 		player.setMana(player.getMana() + this.manaPoints);
 	}
 

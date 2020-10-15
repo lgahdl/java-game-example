@@ -9,6 +9,9 @@ import com.histudio.main.Game;
 
 public class UI {
 
+	private static int fadingFrames = 0, maxFadingFrames = 30;
+	private static boolean showPressSpace = false;
+
 	public UI() {
 
 	}
@@ -36,19 +39,42 @@ public class UI {
 	public void render(Graphics g) {
 		this.renderLife(g);
 		this.renderMana(g);
-		
-		if(Game.gameState == "GAMEOVER") {
+
+		if (Game.gameState == "GAMEOVER") {
 			this.renderGameOver(g);
 		}
-		
+
+		if (Game.gameState == "SAVE") {
+			this.renderSaveScreen(g);
+		}
+
 	}
-	
+
 	public void renderGameOver(Graphics g) {
 		Graphics2D g2 = (Graphics2D) g;
 		g2.setColor(new Color(0, 0, 0, 100));
 		g2.fillRect(0, 0, Game.WIDTH * Game.SCALE, Game.HEIGHT * Game.SCALE);
 		g.setColor(Color.RED);
 		g.setFont(new Font("arial", Font.BOLD, 42));
-		g.drawString("GAME OVER", (Game.WIDTH/2-130), Game.HEIGHT/2);
+		g.drawString("GAME OVER", (Game.WIDTH / 2 - 130), Game.HEIGHT / 2);
+		if (showPressSpace) {
+			g.setColor(Color.RED);
+			g.setFont(new Font("arial", Font.BOLD, 20));
+			g.drawString(">press SPACE to restart<", (Game.WIDTH / 2 - 124), Game.HEIGHT / 2 + 40);
+		}
+		fadingFrames++;
+		if (fadingFrames >= maxFadingFrames) {
+			fadingFrames = 0;
+			showPressSpace = !showPressSpace;
+		}
 	}
-}	
+
+	public void renderSaveScreen(Graphics g) {
+		Graphics2D g2 = (Graphics2D) g;
+		g2.setColor(new Color(0, 0, 0, 100));
+		g2.fillRect(0, 0, Game.WIDTH * Game.SCALE, Game.HEIGHT * Game.SCALE);
+		g.setColor(Color.WHITE);
+		g.setFont(new Font("arial", Font.BOLD, 12));
+		g.drawString("Press X to save or Z to continue without save", (Game.WIDTH / 2 - 130), Game.HEIGHT / 2);
+	}
+}

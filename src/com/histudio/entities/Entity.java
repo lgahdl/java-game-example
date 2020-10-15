@@ -22,7 +22,7 @@ public class Entity {
 
 	protected BufferedImage sprite;
 
-	public int maskx = 8, masky = 8, maskWidth = 12, maskHeight = 16;
+	public int maskx = 8, masky = 8, maskWidth = 16, maskHeight = 16;
 
 	public Entity(int x, int y, int width, int height, BufferedImage sprite) {
 		this.x = x;

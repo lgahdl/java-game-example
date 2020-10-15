@@ -6,6 +6,7 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 import com.histudio.main.Game;
+import com.histudio.main.Sound;
 import com.histudio.world.Camera;
 import com.histudio.world.World;
 
@@ -13,7 +14,7 @@ public class Enemy extends Entity {
 
 	private double speed = 0.8;
 
-	public int maskx = 8, masky = 16, maskWidth = 16, maskHeight = 24;
+	public int maskx = 16, masky = 4, maskWidth = 16, maskHeight = 24;
 
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 4;
 
@@ -47,20 +48,20 @@ public class Enemy extends Entity {
 		if (isCollidingWithPlayer() == false) {
 
 			if ((int) x < Game.player.getX() && World.isFree((int) (x + speed), this.getY())
-					&& !isColliding((int) (x + speed), this.getY())) {
+					&& !isCollidingWithEnemy((int) (x + speed), this.getY())) {
 				x += speed;
 				moved = true;
 			} else if ((int) x > Game.player.getX() && World.isFree((int) (x - speed), this.getY())
-					&& !isColliding((int) (x - speed), this.getY())) {
+					&& !this.isCollidingWithEnemy((int) (x - speed), this.getY())) {
 				x -= speed;
 				moved = true;
 			}
 			if (y < Game.player.getY() && World.isFree(this.getX(), (int) (y + speed))
-					&& !isColliding(this.getX(), (int) (y + speed))) {
+					&& !isCollidingWithEnemy(this.getX(), (int) (y + speed))) {
 				y += speed;
 				moved = true;
 			} else if (y > Game.player.getY() && World.isFree(this.getX(), (int) (y - speed))
-					&& !isColliding(this.getX(), (int) (y - speed))) {
+					&& !isCollidingWithEnemy(this.getX(), (int) (y - speed))) {
 				y -= speed;
 				moved = true;
 			}
@@ -68,8 +69,7 @@ public class Enemy extends Entity {
 			currentFrameToDamage++;
 			if (currentFrameToDamage >= framesToDamage) {
 				currentFrameToDamage = 0;
-				Game.player.setLife(Game.player.getLife() - this.damage);
-				Game.player.setDamaged(true);
+				Game.player.takeDamage(this.damage);
 			}
 		}
 		if (moved) {
@@ -95,8 +95,10 @@ public class Enemy extends Entity {
 
 	public void collidingFireball() {
 		for (int i = 0; i < Game.fireballs.size(); i++) {
-			Entity e = Game.fireballs.get(i);
-			if (Entity.isColliding(this, e)) {
+			FireballShoot e = Game.fireballs.get(i);
+			e.setMask(FireballShoot.maskx, FireballShoot.masky, FireballShoot.maskHeight, FireballShoot.maskWidth);
+			if (this.isCollidingWithFireball(e)) {
+				Sound.enemyDamaged.play();
 				life--;
 				this.isDamaged = true;
 				Game.fireballs.remove(i);
@@ -104,14 +106,23 @@ public class Enemy extends Entity {
 			}
 		}
 	}
-
+	
+	public boolean isCollidingWithFireball(FireballShoot e2) {
+		Enemy e1 = this;
+		Rectangle e1Mask = new Rectangle(e1.getX() + e1.maskx - Camera.x, e1.getY() + e1.masky - Camera.y, e1.maskWidth,
+				e1.maskHeight);
+		Rectangle e2Mask = new Rectangle(e2.getX() + e2.maskx - Camera.x, e2.getY() + e2.masky - Camera.y, e2.maskWidth,
+				e2.maskHeight);
+		return e2Mask.intersects(e1Mask);
+	}
+	
 	public boolean isCollidingWithPlayer() {
 		Rectangle currentEnemy = new Rectangle(this.getX() + maskx, this.getY() + masky, maskWidth, maskHeight);
 		Rectangle player = new Rectangle(Game.player.getX(), Game.player.getY(), World.TILE_SIZE, World.TILE_SIZE);
 		return currentEnemy.intersects(player);
 	}
 
-	public boolean isColliding(int xnext, int ynext) {
+	public boolean isCollidingWithEnemy(int xnext, int ynext) {
 		Rectangle currentEnemy = new Rectangle(xnext + maskx, ynext + masky, maskWidth, maskHeight);
 		for (int i = 0; i < Game.enemies.size(); i++) {
 			Enemy e = Game.enemies.get(i);

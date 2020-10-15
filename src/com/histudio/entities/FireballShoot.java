@@ -11,29 +11,32 @@ import com.histudio.world.World;
 public class FireballShoot extends Entity {
 
 	private double dx, dy;
-	private double speed = 6;
-	
-	private int time = 80, curTime = 0;
+	private double speed = 8;
 
-	public int maskx = 12, masky = 12, maskWidth = 8, maskHeight = 8;
-	
+	private int time = 1000, curTime = 0;
+
+	public static int maskx = 12;
+	public static int masky = 12;
+	public static int maskWidth = 8;
+	public static int maskHeight = 8;
+
 	public FireballShoot(int x, int y, int width, int height, BufferedImage sprite, double dx, double dy) {
 		super(x, y, width, height, sprite);
 		this.dx = dx;
 		this.dy = dy;
 		this.maskWidth = width;
 		this.maskHeight = height;
-		this.maskx = (World.TILE_SIZE - width)/2;
-		this.masky = (World.TILE_SIZE - height)/2;
 		// TODO Auto-generated constructor stub
 	}
 
 	@Override
 	public void tick() {
-		x += dx * speed;
-		y += dy * speed;
+		int xNext = (int) (x + (dx * speed));
+		int yNext = (int) (y + (dy * speed));
 		curTime++;
-		if(curTime == time) {
+		x = xNext;
+		y = yNext;
+		if (curTime == time) {
 			Game.fireballs.remove(this);
 			return;
 		}
