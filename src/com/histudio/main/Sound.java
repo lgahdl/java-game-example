@@ -38,7 +38,6 @@ public class Sound {
 			new Thread() {
 				public void run() {
 					clip.loop(1);
-					System.out.println("Played");
 				}
 			}.start();
 		} catch (Throwable e) {

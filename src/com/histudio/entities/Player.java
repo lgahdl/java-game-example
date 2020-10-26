@@ -2,6 +2,7 @@ package com.histudio.entities;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
 import com.histudio.main.Game;
@@ -166,6 +167,8 @@ public class Player extends Entity {
 
 	@Override
 	public void tick() {
+
+		
 		moved = false;
 		double movingSpeed = speed * (isRunning ? 2 : 1);
 		if (jump) {
@@ -250,8 +253,8 @@ public class Player extends Entity {
 		if (shoot) {
 			shoot = false;
 			this.mana -= 2;
-			int dx = this.lastPressedMovementKey == "right" ? 1 : this.lastPressedMovementKey == "left" ? -1 : 0;
-			int dy = this.lastPressedMovementKey == "up" ? -1 : this.lastPressedMovementKey == "down" ? 1 : 0;
+			double dx = this.lastPressedMovementKey == "right" ? 1 : this.lastPressedMovementKey == "left" ? -1 : 0;
+			double dy = this.lastPressedMovementKey == "up" ? -1 : this.lastPressedMovementKey == "down" ? 1 : 0;
 
 			if (right && !left) {
 				dx = 1;
@@ -265,7 +268,13 @@ public class Player extends Entity {
 			if (down && !up) {
 				dy = 1;
 			}
-			FireballShoot fireball = new FireballShoot(this.getX() + 12, this.getY() + 32, 6, 6, null, dx, dy);
+			if (dy != 0 && dx != 0) {
+				dy = dy / 2;
+				dx = dx / 2;
+			}
+			int px = 12;
+			int py = 12;
+			FireballShoot fireball = new FireballShoot(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy);
 			Game.fireballs.add(fireball);
 		}
 		if (mouseShoot) {
@@ -279,6 +288,8 @@ public class Player extends Entity {
 			FireballShoot fireball = new FireballShoot(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy);
 			Game.fireballs.add(fireball);
 		}
+		
+		Game.ui.renderOnMinimap(this.getX() / 32, this.getY() / 32, "player");
 
 		setCamera();
 
@@ -301,10 +312,6 @@ public class Player extends Entity {
 		case "right":
 			if (right) {
 				g.drawImage(rightPlayer[index], positionX, positionY, null);
-				if (this.weapon instanceof Weapon) {
-					BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
-					g.drawImage(weaponSprites[index < 4 ? index : 0], positionX, positionY, null);
-				}
 			} else {
 				g.drawImage(rightPlayer[0], positionX, positionY, null);
 			}
@@ -312,10 +319,6 @@ public class Player extends Entity {
 		case "left":
 			if (left) {
 				g.drawImage(leftPlayer[index], positionX, positionY, null);
-				if (this.weapon instanceof Weapon) {
-					BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
-					g.drawImage(weaponSprites[index < 4 ? index : 0], positionX, positionY, null);
-				}
 			} else {
 				g.drawImage(leftPlayer[0], positionX, positionY, null);
 			}
@@ -323,10 +326,6 @@ public class Player extends Entity {
 		case "up":
 			if (up) {
 				g.drawImage(upPlayer[index], positionX, positionY, null);
-				if (this.weapon instanceof Weapon) {
-					BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
-					g.drawImage(weaponSprites[index < 4 ? index : 0], positionX, positionY, null);
-				}
 			} else {
 				g.drawImage(upPlayer[0], positionX, positionY, null);
 			}
@@ -334,10 +333,6 @@ public class Player extends Entity {
 		case "down":
 			if (down) {
 				g.drawImage(frontPlayer[index], positionX, positionY, null);
-				if (this.weapon instanceof Weapon) {
-					BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
-					g.drawImage(weaponSprites[index < 4 ? index : (index - index / 2)], positionX, positionY, null);
-				}
 			} else {
 				g.drawImage(frontPlayer[0], positionX, positionY, null);
 			}
@@ -345,7 +340,15 @@ public class Player extends Entity {
 		default:
 			break;
 		}
-
+		if (this.weapon instanceof Weapon) {
+			Graphics2D g2 = (Graphics2D) g;
+			double cy = positionY + 16 - Game.my;
+			double cx = positionX + 16 - Game.mx;
+			double correctionAngle = Math.toRadians(-135);
+			g2.rotate(Math.atan2(cy, cx) + correctionAngle, positionX + 16, positionY + 16);
+			g.drawImage(this.weapon.sprite, positionX, positionY, null);
+			g2.rotate(-Math.atan2(cy, cx) - correctionAngle, positionX + 16, positionY + 16);
+		}
 //		if (!damaged) {
 //
 //			if (isRight) {

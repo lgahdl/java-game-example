@@ -32,6 +32,7 @@ public class Weapon extends Entity {
 	
 	@Override
 	public void tick() {
+		Game.ui.renderOnMinimap(this.getX()/32, this.getY()/32, "weapon");
 		if(this.isColliding(this, Game.player)) {
 			Game.player.setWeapon(this);
 			this.equipped = true;

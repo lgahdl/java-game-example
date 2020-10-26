@@ -11,7 +11,7 @@ import com.histudio.main.Game;
 
 public class World {
 
-	private static Tile[] tiles;
+	public static Tile[] tiles;
 	public static int WIDTH, HEIGHT;
 	public static final int TILE_SIZE = 32;
 
@@ -103,7 +103,7 @@ public class World {
 				|| tiles[x3 + (y3 * World.WIDTH)] instanceof WallTile
 				|| tiles[x4 + (y4 * World.WIDTH)] instanceof WallTile);
 	}
-
+	
 	public void render(Graphics g) {
 		int xstart = Camera.x >> 5;
 		int ystart = Camera.y >> 5;
@@ -115,8 +115,11 @@ public class World {
 				if (i < 0 || j < 0 || i >= WIDTH || j >= HEIGHT) {
 					continue;
 				}
-				Tile tile = tiles[i + (j * WIDTH)];
-				tile.render(g);
+				try {
+					Tile tile = tiles[i + (j * WIDTH)];
+					tile.render(g);
+				} catch (Exception e) {
+				}
 			}
 		}
 	}

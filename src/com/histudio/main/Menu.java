@@ -2,6 +2,7 @@ package com.histudio.main;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontFormatException;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.io.BufferedReader;
@@ -11,6 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 
 import com.histudio.world.World;
 
@@ -20,30 +22,36 @@ public class Menu {
 
 	public static int unitHeight = Game.HEIGHT / 100, unitWidth = Game.WIDTH / 100;
 
-	public Menu() {
+	public InputStream stream = ClassLoader.getSystemClassLoader().getResourceAsStream("pixelfont.ttf");
+	
+	private Font font;
 
+	public Menu() {
+		try {
+			font = Font.createFont(Font.TRUETYPE_FONT, stream).deriveFont(20f);
+		} catch (FontFormatException | IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void render(Graphics g) {
 		Graphics2D g2 = (Graphics2D) g;
 		g2.setColor(new Color(0, 0, 0, 100));
 		g2.fillRect(0, 0, Game.WIDTH * Game.SCALE, Game.HEIGHT * Game.SCALE);
+		g.setFont(font);
 
 		g.setColor(new Color(135, 135, 100));
 		g.fillRect(25 * unitWidth, 35 * unitHeight, 50 * unitWidth, 15 * unitHeight);
-		g.setFont(new Font("arial", Font.BOLD, 5 * unitWidth));
 		g.setColor(Color.BLACK);
 		g.drawString("PLAY", 43 * unitWidth, 47 * unitHeight);
 
 		g.setColor(new Color(135, 135, 100));
 		g.fillRect(25 * unitWidth, 55 * unitHeight, 50 * unitWidth, 15 * unitHeight);
-		g.setFont(new Font("arial", Font.BOLD, Game.WIDTH / 20));
 		g.setColor(Color.BLACK);
 		g.drawString("LOAD", 43 * unitWidth, 67 * unitHeight);
 
 		g.setColor(new Color(135, 135, 100));
 		g.fillRect(25 * unitWidth, 75 * unitHeight, 50 * unitWidth, 15 * unitHeight);
-		g.setFont(new Font("arial", Font.BOLD, Game.WIDTH / 20));
 		g.setColor(Color.BLACK);
 		g.drawString("QUIT", 43 * unitWidth, 87 * unitHeight);
 
@@ -73,10 +81,10 @@ public class Menu {
 		Game.exitGame();
 	}
 
-	private void onClickLoad() {
+	public void onClickLoad() {
 		File file = new File("save.txt");
 		if (file.exists()) {
-			String saver = loadGame(10);
+			String saver = loadGame(-10);
 			applySave(saver);
 		}
 	}
@@ -152,6 +160,9 @@ public class Menu {
 			switch (spl2[0]) {
 			case "level":
 				Game.startNewLevel("/map" + spl2[1] + ".png");
+				break;
+			case "life":
+				Game.player.setLife((double) Integer.parseInt(spl2[1]));
 				break;
 			}
 		}
