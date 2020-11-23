@@ -3,6 +3,7 @@ package com.histudio.world;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 
@@ -42,7 +43,10 @@ public class World {
 						Game.entities.add(new Manapack(i * 32, j * 32, 32, 32, Entity.MANAPACK_EN));
 						break;
 					case 0xFF00FFFF: // CIANO
-						Game.entities.add(new Weapon(i * 32, j * 32, 32, 32, Entity.WEAPON_EN));
+						Game.entities.add(new Weapon(i * 32, j * 32, 32, 32, Entity.WEAPON_EN, 3));
+						break;
+					case 0xFF404040: //GRAFITE
+						Game.entities.add(new Sword(i*32, j*32, 32,32,Entity.SWORD_EN,3));
 						break;
 					case 0xFF00FF00: // VERDE
 						Game.entities.add(new Lifepack(i * 32, j * 32, 32, 32, Entity.LIFEPACK_EN));
@@ -67,6 +71,79 @@ public class World {
 		}
 	}
 
+	public World(int width, int height, int pathSize) {
+		WIDTH = width;
+		HEIGHT = height;
+		tiles = new Tile[WIDTH * HEIGHT];
+		for (int i = 0; i < WIDTH; i++) {
+			for (int j = 0; j < HEIGHT; j++) {
+				tiles[i + j * WIDTH] = new WallTile(i * 32, j * 32, Tile.TILE_WALL);
+			}
+		}
+		String[] directions = { "up", "down", "left", "right" };
+		int dirIndex = 0; // DIRECTION OF THE PATH MAKER FOR RANDOM MAP
+		int xx = 1, yy = 1;
+		if (pathSize > width * height - 2 * (width + height)) {
+			pathSize = width * height - 2 * (width + height);
+		}
+		for (int i = 0; i < pathSize; i++) {
+			switch (directions[dirIndex]) {
+			case "up":
+				if (yy > 1) {
+					yy--;
+					break;
+				}
+			case "down":
+				if (yy < HEIGHT - 2) {
+					yy++;
+					break;
+				}
+			case "left":
+				if (xx > 1) {
+					xx--;
+					break;
+				}
+			case "right":
+				if (xx < WIDTH - 2) {
+					xx++;
+					break;
+				}
+			default:
+				break;
+			}
+			tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 32, yy * 32, Tile.TILE_FLOOR);
+
+			if (Game.rand.nextInt(100) > 20) {
+				dirIndex = Game.rand.nextInt(4);
+			}
+			if (i % 121 == 0) {
+				Game.entities.add(new Manapack(xx * 32, yy * 32, 32, 32, Entity.MANAPACK_EN));
+			}
+			if (i % 120 == 0) {
+				Game.entities.add(new Lifepack(xx * 32, yy * 32, 32, 32, Entity.LIFEPACK_EN));
+			}
+			if (i % 50 == 0) {
+				Enemy en = new Enemy(xx * 32, yy * 32, 32, 32, Entity.ENEMY_EN);
+				Game.entities.add(en);
+				Game.enemies.add(en);
+			}
+			if (i == pathSize / 2) {
+				Game.entities.add(new Weapon(xx * 32, yy * 32, 32, 32, Entity.WEAPON_EN, 3));
+			}
+			if (i == pathSize - 1) {
+				Game.player.setX(xx * 32);
+				Game.player.setY(yy * 32);
+			}
+		}
+
+	}
+
+	public static void generateParticles(int amount, int x, int y) {
+		for (int i = 0; i < amount; i++) {
+			Game.entities.add(new Particle(x, y, 1, 1, null));
+		}
+	}
+
 	public static boolean isBorder(int xNext, int yNext) {
 		int x1 = xNext / TILE_SIZE;
 		int y1 = yNext / TILE_SIZE;
@@ -86,6 +163,7 @@ public class World {
 	}
 
 	public static boolean isFree(int xNext, int yNext) {
+
 		int x1 = xNext / TILE_SIZE;
 		int y1 = yNext / TILE_SIZE;
 
@@ -103,7 +181,67 @@ public class World {
 				|| tiles[x3 + (y3 * World.WIDTH)] instanceof WallTile
 				|| tiles[x4 + (y4 * World.WIDTH)] instanceof WallTile);
 	}
-	
+
+	public static boolean isFree(int xNext, int yNext, int xNegativeOffset, int yNegativeOffset) {
+		int x1 = xNext / TILE_SIZE;
+		int y1 = yNext / TILE_SIZE;
+
+		int x2 = (xNext + xNegativeOffset - 1) / TILE_SIZE;
+		int y2 = yNext / TILE_SIZE;
+
+		int x3 = xNext / TILE_SIZE;
+		int y3 = (yNext + yNegativeOffset - 1) / TILE_SIZE;
+
+		int x4 = (xNext + xNegativeOffset - 1) / TILE_SIZE;
+		int y4 = (yNext + yNegativeOffset - 1) / TILE_SIZE;
+
+		return !(tiles[x1 + (y1 * World.WIDTH)] instanceof WallTile
+				|| tiles[x2 + (y2 * World.WIDTH)] instanceof WallTile
+				|| tiles[x3 + (y3 * World.WIDTH)] instanceof WallTile
+				|| tiles[x4 + (y4 * World.WIDTH)] instanceof WallTile);
+	}
+
+	public static boolean isFree(int xNext, int yNext, int maskOffsetX, int maskOffsetY, int maskWidth,
+			int maskHeight) {
+		int x1 = (xNext + maskOffsetX) / TILE_SIZE;
+		int y1 = (yNext + maskOffsetY) / TILE_SIZE;
+
+		int x2 = (xNext + (maskOffsetX + maskWidth) - 1) / TILE_SIZE;
+		int y2 = (yNext + maskOffsetY) / TILE_SIZE;
+
+		int x3 = (xNext + maskOffsetX) / TILE_SIZE;
+		int y3 = (yNext + (maskOffsetY + maskHeight) - 1) / TILE_SIZE;
+
+		int x4 = (xNext + (maskOffsetX + maskWidth) - 1) / TILE_SIZE;
+		int y4 = (yNext + (maskOffsetY + maskHeight) - 1) / TILE_SIZE;
+
+		return !(tiles[x1 + (y1 * World.WIDTH)] instanceof WallTile
+				|| tiles[x2 + (y2 * World.WIDTH)] instanceof WallTile
+				|| tiles[x3 + (y3 * World.WIDTH)] instanceof WallTile
+				|| tiles[x4 + (y4 * World.WIDTH)] instanceof WallTile);
+	}
+
+	public static void revealMap(int x, int y) {
+		int x1 = x / TILE_SIZE;
+		int y1 = y / TILE_SIZE;
+		int x2 = (x + TILE_SIZE - 1) / TILE_SIZE;
+		int y2 = (y + TILE_SIZE - 1) / TILE_SIZE;
+
+		for (int i = x1 - 2; i < x2 + 2; i++) {
+			for (int j = y1 - 2; j < y2 + 2; j++) {
+				int curTile = i + j * World.WIDTH;
+				curTile = curTile > 0 ? curTile < tiles.length ? curTile : 0 : 0;
+				tiles[curTile].show = true;
+
+			}
+		}
+
+//		tiles[x1 + y1 * World.WIDTH].show = true;
+//		tiles[x1 + y2 * World.WIDTH].show = true;
+//		tiles[x2 + y1 * World.WIDTH].show = true;
+//		tiles[x2 + y2 * World.WIDTH].show = true;
+	}
+
 	public void render(Graphics g) {
 		int xstart = Camera.x >> 5;
 		int ystart = Camera.y >> 5;

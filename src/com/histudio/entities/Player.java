@@ -14,6 +14,8 @@ public class Player extends Entity {
 
 	public boolean right, up, left, down, isUp, isRight = true, isRunning = false;
 
+	public boolean meleeAttacking = false, isAttacking = false;
+
 	public double speed = 1;
 
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 7;
@@ -37,6 +39,10 @@ public class Player extends Entity {
 	private int damageFrames = 0, maxDamageFrames = 20;
 
 	private Weapon weapon;
+
+	private Sword sword;
+
+	private MeleeAttack meleeAttack = null;
 
 	private String lastPressedMovementKey = "right";
 
@@ -159,6 +165,19 @@ public class Player extends Entity {
 		this.weapon = weapon;
 	}
 
+	public Sword getSword() {
+		return this.sword;
+	}
+
+	public void setSword(Sword sword) {
+		this.sword = sword;
+		return;
+	}
+
+	public void swordAttack() {
+		this.meleeAttacking = true;
+	}
+
 	public void takeDamage(int damage) {
 		this.setLife(this.life - damage);
 		this.setDamaged(true);
@@ -168,81 +187,99 @@ public class Player extends Entity {
 	@Override
 	public void tick() {
 
-		
 		moved = false;
 		double movingSpeed = speed * (isRunning ? 2 : 1);
-		if (jump) {
-			if (this.getIsJumping() == false) {
-				this.setJump(false);
-				this.setIsJumping(true);
-			}
-		}
+//		if (jump) {
+//			if (this.getIsJumping() == false) {
+//				this.setJump(false);
+//				this.setIsJumping(true);
+//			}
+//		}
+//
+//		if (this.isJumping == true) {
+//			if (zTop == false) {
+//				jumpCur += jumpSpeed;
+//			} else if (zTop == true) {
+//				jumpCur -= jumpSpeed;
+//			}
+//			z = jumpCur;
+//			if (jumpFrames <= jumpCur) {
+//				zTop = true;
+//			}
+//			if (z <= 0 && zTop == true) {
+//				zTop = false;
+//				isJumping = false;
+//			}
+//		}
 
-		if (this.isJumping == true) {
-			if (zTop == false) {
-				jumpCur += jumpSpeed;
-			} else if (zTop == true) {
-				jumpCur -= jumpSpeed;
-			}
-			z = jumpCur;
-			if (jumpFrames <= jumpCur) {
-				zTop = true;
-			}
-			if (z <= 0 && zTop == true) {
-				zTop = false;
-				isJumping = false;
-			}
-		}
+		if (!meleeAttacking) {
+			if (right) {
+				this.lastPressedMovementKey = "right";
+				isRight = true;
 
-		if (right) {
-			this.lastPressedMovementKey = "right";
-			isRight = true;
-			if (World.isFree(this.getX() + (int) (movingSpeed), this.getY())
-					|| (!World.isBorder(this.getX() + (int) (movingSpeed), this.getY()) && this.getIsJumping())) {
-				moved = true;
-				x += movingSpeed;
-			}
-		} else if (left) {
-			this.lastPressedMovementKey = "left";
-			isRight = false;
-			if (World.isFree(this.getX() - (int) (movingSpeed), this.getY())
-					|| (!World.isBorder(this.getX() - (int) (movingSpeed), this.getY()) && this.getIsJumping())) {
-				moved = true;
-				x -= movingSpeed;
-			}
-		}
-		if (up) {
-			this.lastPressedMovementKey = "up";
-			isUp = true;
-			if (World.isFree(this.getX(), this.getY() - (int) (movingSpeed))
-					|| (!World.isBorder(this.getX(), this.getY() - (int) (movingSpeed)) && this.getIsJumping())) {
-				moved = true;
-				y -= movingSpeed;
-			}
-		} else if (down) {
-			this.lastPressedMovementKey = "down";
-			isUp = false;
-			if (World.isFree(this.getX(), this.getY() + (int) (movingSpeed))
-					|| (!World.isBorder(this.getX(), this.getY() + (int) (movingSpeed)) && this.getIsJumping())) {
-				moved = true;
-				y += movingSpeed;
-			}
-		}
-		if (moved) {
-			frames++;
-			if (frames >= maxFrames) {
-				frames = 0;
-				index++;
-				if (index == maxIndex) {
-					index = 0;
+				if (World.isFree(this.getX() + (int) (movingSpeed), this.getY(), this.maskx, this.masky, this.maskWidth,
+						this.maskHeight)
+						|| (!World.isBorder(this.getX() + (int) (movingSpeed), this.getY()) && this.getIsJumping())) {
+					moved = true;
+					x += movingSpeed;
+				}
+			} else if (left) {
+				this.lastPressedMovementKey = "left";
+				isRight = false;
+				if (World.isFree(this.getX() - (int) (movingSpeed), this.getY(), this.maskx, this.masky, this.maskWidth,
+						this.maskHeight)
+						|| (!World.isBorder(this.getX() - (int) (movingSpeed), this.getY()) && this.getIsJumping())) {
+					moved = true;
+					x -= movingSpeed;
 				}
 			}
+			if (up) {
+				this.lastPressedMovementKey = "up";
+				isUp = true;
+				if (World.isFree(this.getX(), this.getY() - (int) (movingSpeed), this.maskx, this.masky, this.maskWidth,
+						this.maskHeight)
+						|| (!World.isBorder(this.getX(), this.getY() - (int) (movingSpeed)) && this.getIsJumping())) {
+					moved = true;
+					y -= movingSpeed;
+				}
+			} else if (down) {
+				this.lastPressedMovementKey = "down";
+				isUp = false;
+				if (World.isFree(this.getX(), this.getY() + (int) (movingSpeed), this.maskx, this.masky, this.maskWidth,
+						this.maskHeight)
+						|| (!World.isBorder(this.getX(), this.getY() + (int) (movingSpeed)) && this.getIsJumping())) {
+					moved = true;
+					y += movingSpeed;
+				}
+			}
+			if (moved) {
+				World.revealMap(this.getX(), this.getY());
+				frames++;
+				if (frames >= maxFrames) {
+					frames = 0;
+					index++;
+					if (index == maxIndex) {
+						index = 0;
+					}
+				}
+			}
+			if (!moved) {
+				index = 0;
+			}
 		}
-		if (!moved) {
-			index = 0;
+
+		if (meleeAttacking) {
+			shoot = false;
+			this.meleeAttack = new MeleeAttack(this.getX(), this.getY(), 1, 1, null, this.sword.damage,
+					this.lastPressedMovementKey, this);
+		}
+
+		if (meleeAttack != null) {
+			meleeAttack.tick();
 		}
 
 		if (damaged) {
+			isAttacking = false;
 			this.damageFrames++;
 			if (this.damageFrames == maxDamageFrames) {
 				this.damageFrames = 0;
@@ -274,7 +311,8 @@ public class Player extends Entity {
 			}
 			int px = 12;
 			int py = 12;
-			FireballShoot fireball = new FireballShoot(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy);
+			FireballShoot fireball = new FireballShoot(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy,
+					this.weapon.damage);
 			Game.fireballs.add(fireball);
 		}
 		if (mouseShoot) {
@@ -285,10 +323,11 @@ public class Player extends Entity {
 			double dy = Math.sin(angle);
 			int px = 12;
 			int py = 12;
-			FireballShoot fireball = new FireballShoot(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy);
+			FireballShoot fireball = new FireballShoot(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy,
+					this.weapon.damage);
 			Game.fireballs.add(fireball);
 		}
-		
+
 		Game.ui.renderOnMinimap(this.getX() / 32, this.getY() / 32, "player");
 
 		setCamera();
@@ -349,101 +388,10 @@ public class Player extends Entity {
 			g.drawImage(this.weapon.sprite, positionX, positionY, null);
 			g2.rotate(-Math.atan2(cy, cx) - correctionAngle, positionX + 16, positionY + 16);
 		}
-//		if (!damaged) {
-//
-//			if (isRight) {
-//				if (isUp) {
-//					if (right || up) {
-//						g.drawImage(rightPlayerBack[index], positionX, positionY, null);
-//						if (this.weapon instanceof Weapon) {
-//							BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
-//							g.drawImage(weaponSprites[index], positionX, positionY, null);
-//						}
-//					} else {
-//						g.drawImage(rightPlayerBack[0], positionX, positionY, null);
-//						if (this.weapon instanceof Weapon) {
-//							BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
-//							g.drawImage(weaponSprites[0], positionX, positionY, null);
-//						}
-//					}
-//
-//				} else {
-//					if (right || down) {
-//						g.drawImage(rightPlayerFront[index], positionX, positionY, null);
-//						if (this.weapon instanceof Weapon) {
-//							BufferedImage[] weaponSprites = this.weapon.getFrontRightSprites();
-//							g.drawImage(weaponSprites[index], positionX, positionY, null);
-//						}
-//					} else {
-//						g.drawImage(rightPlayerFront[0], positionX, positionY, null);
-//						if (this.weapon instanceof Weapon) {
-//							BufferedImage[] weaponSprites = this.weapon.getFrontRightSprites();
-//							g.drawImage(weaponSprites[0], positionX, positionY, null);
-//						}
-//					}
-//				}
-//			} else {
-//				if (isUp) {
-//					if (left || up) {
-//						g.drawImage(leftPlayerBack[index], positionX, positionY, null);
-//						if (this.weapon instanceof Weapon) {
-//							BufferedImage[] weaponSprites = this.weapon.getBackLeftSprites();
-//							g.drawImage(weaponSprites[index], positionX, positionY, null);
-//						}
-//					} else {
-//						g.drawImage(leftPlayerBack[0], positionX, positionY, null);
-//						if (this.weapon instanceof Weapon) {
-//							BufferedImage[] weaponSprites = this.weapon.getBackLeftSprites();
-//							g.drawImage(weaponSprites[0], positionX, positionY, null);
-//						}
-//					}
-//				} else {
-//					if (left || down) {
-//						g.drawImage(leftPlayerFront[index], positionX, positionY, null);
-//						if (this.weapon instanceof Weapon) {
-//							BufferedImage[] weaponSprites = this.weapon.getFrontLeftSprites();
-//							g.drawImage(weaponSprites[index], positionX, positionY, null);
-//						}
-//					} else {
-//						g.drawImage(leftPlayerFront[0], positionX, positionY, null);
-//						if (this.weapon instanceof Weapon) {
-//							BufferedImage[] weaponSprites = this.weapon.getFrontLeftSprites();
-//							g.drawImage(weaponSprites[0], positionX, positionY, null);
-//						}
-//					}
-//				}
-//			}
-//		} else {
-//			if (isRight) {
-//				if (isUp) {
-//					g.drawImage(playerDamaged[2], positionX, positionY, null);
-//					if (this.weapon instanceof Weapon) {
-//						BufferedImage[] weaponSprites = this.weapon.getBackRightSprites();
-//						g.drawImage(weaponSprites[0], positionX, positionY, null);
-//					}
-//				} else {
-//					g.drawImage(playerDamaged[0], positionX, positionY, null);
-//					if (this.weapon instanceof Weapon) {
-//						BufferedImage[] weaponSprites = this.weapon.getFrontRightSprites();
-//						g.drawImage(weaponSprites[0], positionX, positionY, null);
-//					}
-//				}
-//			} else {
-//				if (isUp) {
-//					g.drawImage(playerDamaged[3], positionX, positionY, null);
-//					if (this.weapon instanceof Weapon) {
-//						BufferedImage[] weaponSprites = this.weapon.getBackLeftSprites();
-//						g.drawImage(weaponSprites[0], positionX, positionY, null);
-//					}
-//				} else {
-//					g.drawImage(playerDamaged[1], positionX, positionY, null);
-//					if (this.weapon instanceof Weapon) {
-//						BufferedImage[] weaponSprites = this.weapon.getFrontLeftSprites();
-//						g.drawImage(weaponSprites[0], positionX, positionY, null);
-//					}
-//				}
-//			}
-//		}
+
+		if (this.meleeAttack != null) {
+			meleeAttack.render(g);
+		}
 
 	}
 

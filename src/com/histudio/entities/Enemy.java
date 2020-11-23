@@ -1,13 +1,15 @@
 package com.histudio.entities;
 
+import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
 import com.histudio.main.Game;
 import com.histudio.main.Sound;
-import com.histudio.world.AStar;
+import com.histudio.utils.AStar;
 import com.histudio.world.Camera;
 import com.histudio.world.Node;
 import com.histudio.world.Vector2i;
@@ -17,13 +19,15 @@ public class Enemy extends Entity {
 
 	private double speed = 0.8;
 
-	public int maskx = 16, masky = 4, maskWidth = 16, maskHeight = 32;
+	public int maskx = 8, masky = 8, maskWidth = 16, maskHeight = 16;
 
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 4;
 
 	private int damage = 10, framesToDamage = 15, currentFrameToDamage = 0;
 
 	private boolean moved = false;
+	private String direction = "right";
+	public boolean canChangeDirection = false;
 	private BufferedImage[] sprites;
 	private BufferedImage feedbackSprite;
 	private boolean isDamaged = false;
@@ -51,12 +55,11 @@ public class Enemy extends Entity {
 			Game.entities.remove(this);
 			Game.enemies.remove(this);
 		}
-		this.collidingFireball();
 		this.collidingPlayer();
 		double distance = calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY());
-		if (distance < 80) {
+		if (distance < 100) {
 			isActive = true;
-		} else if (distance < 250 && (path == null || path.size() <= 12)) {
+		} else if (distance < 300 && (path == null || path.size() <= 20)) {
 			isActive = true;
 		} else {
 			isActive = false;
@@ -83,8 +86,8 @@ public class Enemy extends Entity {
 //			}
 //		}
 		if (isActive) {
-			Vector2i start = new Vector2i(this.getX() / 32, this.getY() / 32);
-			Vector2i end = new Vector2i(Game.player.getX() / 32, Game.player.getY() / 32);
+			Vector2i start = new Vector2i((this.getX() + 16) / 32, (this.getY() + 16) / 32);
+			Vector2i end = new Vector2i((Game.player.getX() + 16) / 32, (Game.player.getY() + 16) / 32);
 			path = AStar.findPath(Game.world, start, end);
 		}
 
@@ -117,13 +120,18 @@ public class Enemy extends Entity {
 			FireballShoot e = Game.fireballs.get(i);
 			e.setMask(FireballShoot.maskx, FireballShoot.masky, FireballShoot.maskHeight, FireballShoot.maskWidth);
 			if (this.isCollidingWithFireball(e)) {
-				Sound.enemyDamaged.play();
-				life--;
-				this.isDamaged = true;
-				Game.fireballs.remove(i);
-				return;
+
 			}
 		}
+	}
+
+	public void getHit(int damage) {
+		Sound.enemyDamaged.play();
+		life = life - damage;
+		this.isDamaged = true;
+//		Game.fireballs.remove(i);
+		World.generateParticles(200, this.getX(), this.getY());
+		return;
 	}
 
 	public boolean isCollidingWithFireball(FireballShoot e2) {
@@ -174,27 +182,39 @@ public class Enemy extends Entity {
 
 				Vector2i target = path.get(path.size() - 1).tile;
 				if (x < target.x * 32) {
-					if (World.isFree((int) (x + speed), this.getY())
-							&& !isCollidingWithEnemy((int) (x + speed), this.getY())) {
+					if (World.isFree((int) (x + speed), this.getY(), this.maskx, this.masky, this.maskWidth,
+							this.maskHeight) && !isCollidingWithEnemy((int) (x + speed), this.getY())) {
 						x += speed;
 						moved = true;
+						if (canChangeDirection) {
+							direction = "right";
+							canChangeDirection = false;
+						} else {
+							canChangeDirection = true;
+						}
 					}
 				} else if (x > target.x * 32) {
-					if (World.isFree((int) (x - speed), this.getY())
-							&& !this.isCollidingWithEnemy((int) (x - speed), this.getY())) {
+					if (World.isFree((int) (x - speed), this.getY(), this.maskx, this.masky, this.maskWidth,
+							this.maskHeight) && !this.isCollidingWithEnemy((int) (x - speed), this.getY())) {
 						x -= speed;
 						moved = true;
+						if (canChangeDirection) {
+							direction = "left";
+							canChangeDirection = false;
+						} else {
+							canChangeDirection = true;
+						}
 					}
 				}
 				if (y < target.y * 32) {
-					if (World.isFree(this.getX(), (int) (y + speed))
-							&& !isCollidingWithEnemy(this.getX(), (int) (y + speed))) {
+					if (World.isFree(this.getX(), (int) (y + speed), this.maskx, this.masky, this.maskWidth,
+							this.maskHeight) && !isCollidingWithEnemy(this.getX(), (int) (y + speed))) {
 						y += speed;
 						moved = true;
 					}
 				} else if (y > target.y * 32) {
-					if (World.isFree(this.getX(), (int) (y - speed))
-							&& !isCollidingWithEnemy(this.getX(), (int) (y - speed))) {
+					if (World.isFree(this.getX(), (int) (y - speed), this.maskx, this.masky, this.maskWidth,
+							this.maskHeight) && !isCollidingWithEnemy(this.getX(), (int) (y - speed))) {
 						y -= speed;
 						moved = true;
 					}
@@ -212,11 +232,28 @@ public class Enemy extends Entity {
 
 	@Override
 	public void render(Graphics g) {
+		renderCollider(g);
+		Graphics2D g2 = (Graphics2D) g;
 		if (!isDamaged) {
-			g.drawImage(sprites[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+			if (direction == "right") {
+				g.drawImage(sprites[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+			} else if (direction == "left") {
+				g2.drawImage(sprites[index], this.getX() - Camera.x + this.getWidth(), this.getY() - Camera.y,
+						-this.getWidth(), this.getHeight(), null);
+			}
 		} else {
-			g.drawImage(feedbackSprite, this.getX() - Camera.x, this.getY() - Camera.y, null);
+			if (direction == "right") {
+				g.drawImage(feedbackSprite, this.getX() - Camera.x, this.getY() - Camera.y, null);
+			} else {
+				g2.drawImage(feedbackSprite, this.getX() - Camera.x + this.getWidth(), this.getY() - Camera.y,
+						-this.getWidth(), this.getHeight(), null);
+			}
 		}
+	}
+
+	private void renderCollider(Graphics g) {
+		g.setColor(Color.BLUE);
+		g.drawRect(this.getX() + maskx - Camera.x, this.getY() + masky - Camera.y, maskWidth, maskHeight);
 	}
 
 }

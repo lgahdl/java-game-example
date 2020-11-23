@@ -1,63 +1,76 @@
 package com.histudio.main;
 
-import java.io.File;
-import java.io.IOException;
-
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.UnsupportedAudioFileException;
+import java.io.*;
+import javax.sound.sampled.*;
 
 public class Sound {
 
-	private File file;
-	private Clip clip;
+	public static class Clips {
+		public Clip[] clips;
+		private int p;
+		private int count;
 
-	public static final Sound musicBackground = new Sound("res/music.wav");
-	public static final Sound playerDamaged = new Sound("res/damaged2.wav");
-	public static final Sound enemyDamaged = new Sound("res/damaged.wav");
-	public static final Sound playerJump = new Sound("res/jump.wav");
-
-	public Sound(String filename) {
-		try {
-			file = new File(filename);
-			if (file.exists()) {
-
-			} else {
-				System.out.println("FILEPATH " + filename + " DOES NOT EXISTS");
+		public Clips(byte[] buffer, int count)
+				throws LineUnavailableException, IOException, UnsupportedAudioFileException {
+			if (buffer == null) {
+				return;
 			}
-			clip = AudioSystem.getClip();
-			clip.open(AudioSystem.getAudioInputStream(file));
-		} catch (Throwable e) {
+			clips = new Clip[count];
+			this.count = count;
 
+			for (int i = 0; i < count; i++) {
+				clips[i] = AudioSystem.getClip();
+				clips[i].open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(buffer)));
+
+			}
 		}
+
+		public void play() {
+			if (clips == null) {
+				return;
+			}
+			clips[p].stop();
+			clips[p].setFramePosition(0);
+			clips[p].start();
+			p++;
+			if (p >= count) {
+				p = 0;
+			}
+		}
+
+		public void loop() {
+			if (clips == null) {
+				return;
+			}
+			clips[p].loop(300);
+		}
+
 	}
 
-	public void play() {
+	public static Clips music = load("/music.wav", 1);
+
+	public static Clips playerDamaged = load("/damaged2.wav", 1);
+
+	public static Clips enemyDamaged = load("/damaged.wav", 1);
+
+	private static Clips load(String name, int count) {
 		try {
-			new Thread() {
-				public void run() {
-					clip.loop(1);
-				}
-			}.start();
-		} catch (Throwable e) {
-
-		}
-	}
-
-	public void loop() {
-		try {
-			new Thread() {
-				public void run() {
-					try {
-						clip.loop(Clip.LOOP_CONTINUOUSLY);
-					} catch (Exception e) {
-						System.out.println(e);
-					}
-				}
-			}.start();
-		} catch (Throwable e) {
-
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataInputStream dis = new DataInputStream(Sound.class.getResourceAsStream(name));
+			byte[] buffer = new byte[1024];
+			int read = 0;
+			while ((read = dis.read(buffer)) >= 0) {
+				baos.write(buffer, 0, read);
+			}
+			dis.close();
+			byte[] data = baos.toByteArray();
+			return new Clips(data, count);
+		} catch (Exception e) {
+			try {
+				return new Clips(null, 0);
+			} catch (LineUnavailableException | IOException | UnsupportedAudioFileException e1) {
+				return null;
+			}
 		}
 	}
 

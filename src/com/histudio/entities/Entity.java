@@ -1,5 +1,6 @@
 package com.histudio.entities;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
@@ -17,6 +18,7 @@ public class Entity {
 	public static BufferedImage WEAPON_EN = Game.spritesheet.getSprite(7 * 32, 0, 32, 32);
 	public static BufferedImage MANAPACK_EN = Game.spritesheet.getSprite(6 * 32, 32, 32, 32);
 	public static BufferedImage ENEMY_EN = Game.spritesheet.getSprite(7 * 32, 32, 32, 32);
+	public static BufferedImage SWORD_EN = Game.spritesheet.getSprite(5 * 32, 6 * 32, 32, 32);
 
 	protected double x;
 	protected double y;
@@ -39,8 +41,17 @@ public class Entity {
 		return (int) this.x;
 	}
 
+	public void setX(int x) {
+		this.x = x;
+		return;
+	}
+
 	public int getY() {
 		return (int) this.y;
+	}
+
+	public void setY(int y) {
+		this.y = y;
 	}
 
 	public int getWidth() {
@@ -71,7 +82,7 @@ public class Entity {
 	};
 
 	public void tick() {
-		
+
 	}
 
 	public static double calculateDistance(int x1, int y1, int x2, int y2) {
@@ -87,8 +98,12 @@ public class Entity {
 	}
 
 	public void render(Graphics g) {
-//		g.setColor(Color.BLUE);
-//		g.fillRect(this.getX() + maskx - Camera.x, this.getY() + masky - Camera.y, this.maskWidth, this.maskHeight);
+		renderCollisionBox(g);
 		g.drawImage(sprite, this.getX() - Camera.x, this.getY() - Camera.y, null);
+	}
+
+	private void renderCollisionBox(Graphics g) {
+		g.setColor(Color.BLUE);
+		g.fillRect(this.getX() + maskx - Camera.x, this.getY() + masky - Camera.y, this.maskWidth, this.maskHeight);
 	}
 }

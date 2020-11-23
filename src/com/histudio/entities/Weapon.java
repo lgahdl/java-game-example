@@ -15,7 +15,9 @@ public class Weapon extends Entity {
 	
 	private boolean equipped = false;
 	
-	public Weapon(int x, int y, int width, int height, BufferedImage sprite) {
+	public int damage;
+	
+	public Weapon(int x, int y, int width, int height, BufferedImage sprite, int damage) {
 		super(x, y, width, height, sprite);
 		frontRightSprites = new BufferedImage[4];
 		frontLeftSprites = new BufferedImage[4];
@@ -27,6 +29,7 @@ public class Weapon extends Entity {
 			backRightSprites[i] = Game.spritesheet.getSprite(32 + i * 32, 256, 32, 32);
 			backLeftSprites[i] = Game.spritesheet.getSprite(32 + i * 32, 288, 32, 32);
 		}
+		this.damage = damage;
 	}
 	
 	

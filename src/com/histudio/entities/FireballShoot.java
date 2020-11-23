@@ -19,14 +19,16 @@ public class FireballShoot extends Entity {
 	public static int masky = 12;
 	public static int maskWidth = 8;
 	public static int maskHeight = 8;
+	
+	private int damage=1;
 
-	public FireballShoot(int x, int y, int width, int height, BufferedImage sprite, double dx, double dy) {
+	public FireballShoot(int x, int y, int width, int height, BufferedImage sprite, double dx, double dy, int damage) {
 		super(x, y, width, height, sprite);
 		this.dx = dx;
 		this.dy = dy;
 		this.maskWidth = width;
 		this.maskHeight = height;
-		// TODO Auto-generated constructor stub
+		this.damage = damage;
 	}
 
 	@Override
@@ -36,6 +38,21 @@ public class FireballShoot extends Entity {
 		curTime++;
 		x = xNext;
 		y = yNext;
+		
+		
+		
+		if(!World.isFree(xNext, yNext, maskWidth, maskHeight)) {
+			World.generateParticles(200, xNext, yNext);
+			Game.fireballs.remove(this);
+		}
+		
+		for(int i = 0; i<Game.enemies.size();i++) {
+			if(isColliding(this, Game.enemies.get(i))) {
+				Game.enemies.get(i).getHit(this.damage);
+				Game.fireballs.remove(this);
+			}
+		}
+		
 		if (curTime == time) {
 			Game.fireballs.remove(this);
 			return;

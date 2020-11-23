@@ -2,13 +2,17 @@ package com.histudio.main;
 
 import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.awt.Image;
+import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -25,14 +29,16 @@ import java.util.Random;
 import java.awt.Toolkit;
 import java.awt.image.DataBufferInt;
 
+import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 
 import com.histudio.entities.Enemy;
 import com.histudio.entities.Entity;
 import com.histudio.entities.FireballShoot;
+import com.histudio.entities.MeleeAttack;
+import com.histudio.entities.Npc;
 import com.histudio.entities.Player;
-import com.histudio.graphics.Spritesheet;
-import com.histudio.graphics.UI;
+import com.histudio.utils.Spritesheet;
 import com.histudio.world.Camera;
 import com.histudio.world.World;
 
@@ -45,9 +51,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public static JFrame frame;
 	private Thread thread;
 	private boolean isRunning;
-	public static String displayMode = "WINDOW"; // FULLSCREEN or WINDOW
-	public static int WIDTH = displayMode == "FULLSCREEN" ? 1536 / 3 : 420;
-	public static int HEIGHT = displayMode == "FULLSCREEN" ? 864 / 3 : 237;
+	public static String displayMode = "FULLSCREEN"; // FULLSCREEN or WINDOW
+	public static int WIDTH = 420;
+	public static int HEIGHT = 237;
+
+	public static int selectedScreen = 0;
+
 	public final static int SCALE = 3;
 
 	private static BufferedImage image;
@@ -68,6 +77,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	public static UI ui;
 
+	public static GraphicsDevice[] screenDevices = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+
 	public InputStream stream = ClassLoader.getSystemClassLoader().getResourceAsStream("pixelfont.ttf");
 
 	public Font newFont;
@@ -82,9 +93,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	public int[] pixels;
 
+	public int[] lightMap;
+
+	public Npc npc;
+
 	public Game() {
-		// Sound.musicBackground.loop();
-		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		// Sound.music.loop();
+
 //		double screenHeight = screenSize.getHeight();
 //		double screenWidth = screenSize.getWidth();
 		addKeyListener(this);
@@ -93,6 +108,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		initFrame();
 
 		// Inicializando Objetos
+		rand = new Random();
+		lightMap = new int[WIDTH * HEIGHT];
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
 		pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
 		entities = new ArrayList<Entity>();
@@ -103,9 +120,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		player = new Player(0, 0, 32, 32, spritesheet.getSprite(64, 0, 32, 32));
 		entities.add(player);
 		world = new World("/map" + curLevel + ".png");
-		rand = new Random();
+//		world = new World(32, 32, 2500);
 		ui = new UI();
 		menu = new Menu();
+		npc = new Npc(128, 128, 32, 32, spritesheet.getSprite(64, 0, 32, 32));
+		entities.add(npc);
 		try {
 			newFont = Font.createFont(Font.TRUETYPE_FONT, stream).deriveFont(20f);
 		} catch (FontFormatException | IOException e) {
@@ -116,28 +135,37 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	}
 
 	private void initFrame() {
+		frame = new JFrame("Game");
+		frame.add(this);
+		setMouseIcon(frame);
 		// FULLSCREEN
 		if (displayMode == "FULLSCREEN") {
-
-			frame = new JFrame("Game");
-			frame.add(this);
-			frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-			frame.setUndecorated(true);
-			frame.pack();
-			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			showOnScreen(0, frame);
+			showOnScreen(selectedScreen, frame);
 		}
 		// WINDOW MODE
 		else if (displayMode == "WINDOW") {
 			setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
-			frame = new JFrame("Game");
-			frame.add(this);
 			frame.setResizable(false);
 			frame.pack();
 			frame.setLocationRelativeTo(null);
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			frame.setVisible(true);
 		}
+	}
+
+	private void setMouseIcon(JFrame frame) {
+		Image mouseImage = null;
+		try {
+			mouseImage = ImageIO.read(getClass().getResource("/mouseimage.png"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		Toolkit toolkit = Toolkit.getDefaultToolkit();
+		Image image = toolkit.getImage(getClass().getResource("/mouseimage.png"));
+		Cursor c = toolkit.createCustomCursor(image, new Point(0, 0), "img");
+		frame.setCursor(c);
+		frame.setIconImage(mouseImage);
+		frame.setAlwaysOnTop(true);
 	}
 
 	public synchronized void start() {
@@ -166,8 +194,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public void tick() {
 		if (gameState == "PLAYING") {
 
-			if (this.player.getLife() <= 0) {
-				this.gameState = "GAMEOVER";
+			if (player.getLife() <= 0) {
+				gameState = "GAMEOVER";
 			}
 
 			if (enemies.size() == 0) {
@@ -175,7 +203,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				if (curLevel > maxLevel) {
 					curLevel = 1;
 				}
-				this.gameState = "SAVE";
+				gameState = "SAVE";
 			}
 
 			for (int i = 0; i < entities.size(); i++) {
@@ -190,11 +218,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 		} else if (gameState == "GAMEOVER") {
 		}
+		ui.tick();
 	}
 
 	public static void startNewLevel(String path) {
 		gameState = "WAIT";
-
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
 		entities = new ArrayList<Entity>();
 		enemies = new ArrayList<Enemy>();
@@ -217,7 +245,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		}
 
 		Graphics g = image.getGraphics();
-		Graphics2D g2 = (Graphics2D) g;
+		// Graphics2D g2 = (Graphics2D) g;
 		g.setColor(new Color(25, 10, 100));
 		g.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -232,8 +260,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		for (int i = 0; i < fireballs.size(); i++) {
 			fireballs.get(i).render(g);
 		}
-		if(gameState!="WAIT") {
-			ui.render(g);			
+		if (gameState != "WAIT") { // solving renderMinimap conflict;
+			ui.render(g);
 		}
 
 		if (gameState == "MENU") {
@@ -247,7 +275,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		/***/
 		g.dispose();
 		g = bs.getDrawGraphics();
-		drawRectangleExample(40, 40, 1, 1);
+		// drawRectangleExample(40, 40, 64, 64);
 		g.drawImage(image, 0, 0, WIDTH * SCALE, HEIGHT * SCALE, null);
 		bs.show();
 	}
@@ -265,12 +293,24 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	}
 
+	public void applyLight() {
+		for (int xx = 0; xx < WIDTH; xx++) {
+			for (int yy = 0; yy < HEIGHT; yy++) {
+				if (lightMap[xx + yy * WIDTH] == 0xFF000000) {
+
+				}
+			}
+		}
+	}
+	
+	
 	@Override
 	public void run() {
 		long lastTime = System.nanoTime();
 		double amountOfTicks = 60.0;
 		double ns = 1000000000 / amountOfTicks;
 		double delta = 0;
+		@SuppressWarnings("unused")
 		int frames = 0;
 		double timer = System.currentTimeMillis();
 		requestFocus();
@@ -306,7 +346,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	@Override
 	public void keyPressed(KeyEvent e) {
-		if (this.gameState == "PLAYING") {
+		if (gameState == "PLAYING") {
 
 			if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
 				player.right = true;
@@ -325,34 +365,42 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			if (e.getKeyCode() == KeyEvent.VK_K) {
 				player.setShoot(true);
 			}
+			if(e.getKeyCode()==KeyEvent.VK_J) {
+				player.swordAttack();
+			}
+			
 			if (e.getKeyCode() == KeyEvent.VK_SPACE) {
 				Game.player.setJump(true);
 			}
 			if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-				this.gameState = "MENU";
+				gameState = "MENU";
+			}
+			if(ui.dialogue && e.getKeyCode() == KeyEvent.VK_ENTER) {
+				ui.dialogue=false;
+				ui.dialogueClosed=true;
 			}
 			return;
 		}
-		if (this.gameState == "SAVE") {
+		if (gameState == "SAVE") {
 			Game.player.right = false;
 			Game.player.up = false;
 			Game.player.left = false;
 			Game.player.down = false;
 			if (e.getKeyCode() == KeyEvent.VK_X) {
 				this.saveGame();
-				this.startNewLevel("/map" + curLevel + ".png");
+				startNewLevel("/map" + curLevel + ".png");
 			} else if (e.getKeyCode() == KeyEvent.VK_Z) {
-				this.startNewLevel("/map" + curLevel + ".png");
+				startNewLevel("/map" + curLevel + ".png");
 			}
 			return;
 		}
-		if (this.gameState == "MENU") {
+		if (gameState == "MENU") {
 			Game.player.right = false;
 			Game.player.up = false;
 			Game.player.left = false;
 			Game.player.down = false;
 			if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-				this.gameState = "PLAYING";
+				gameState = "PLAYING";
 			}
 			return;
 		}
@@ -360,7 +408,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		if (this.gameState == "PLAYING") {
+		if (gameState == "PLAYING") {
 			if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
 				player.right = false;
 			} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
@@ -376,7 +424,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				player.isRunning = false;
 			}
 		}
-		if (this.gameState == "GAMEOVER") {
+		if (gameState == "GAMEOVER") {
 			if (e.getKeyCode() == KeyEvent.VK_SPACE) {
 				player.setLife(100);
 				player.setMana(70);
@@ -387,13 +435,26 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	}
 
-	public static void showOnScreen(int screen, JFrame frame) {
-		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-		GraphicsDevice[] gs = ge.getScreenDevices();
-		if (screen > -1 && screen < gs.length) {
-			gs[screen].setFullScreenWindow(frame);
-		} else if (gs.length > 0) {
-			gs[0].setFullScreenWindow(frame);
+	public void showOnScreen(int screen, JFrame frame) {
+//		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+//		setPreferredSize(screenSize);
+		GraphicsConfiguration[] screenConfig = screenDevices[screen].getConfigurations();
+		System.out.println("width:" + screenConfig[0].getBounds().getWidth());
+		System.out.println("height:" + screenConfig[0].getBounds().getHeight());
+		int width = (int) screenConfig[0].getBounds().getWidth();
+		int height = (int) screenConfig[0].getBounds().getHeight();
+		setPreferredSize(new Dimension(width, height));
+		WIDTH = width / SCALE;
+		HEIGHT = height / SCALE;
+		// frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+		frame.setUndecorated(true);
+		frame.setResizable(false);
+		frame.pack();
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		if (screen > -1 && screen < screenDevices.length) {
+			screenDevices[screen].setFullScreenWindow(frame);
+		} else if (screenDevices.length > 0) {
+			screenDevices[0].setFullScreenWindow(frame);
 		} else {
 			throw new RuntimeException("No Screens Found");
 		}
@@ -437,7 +498,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	private void saveGame() {
 		String[] opt1 = { "life", "level" };
-		int[] opt2 = { (int) (Game.player.getLife()), this.curLevel };
+		int[] opt2 = { (int) (Game.player.getLife()), curLevel };
 
 		Menu.saveGame(opt1, opt2, -10);
 	}
@@ -451,7 +512,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	@Override
 	public void mouseMoved(MouseEvent e) {
 		// TODO Auto-generated method stub
-		this.mx = e.getX() / SCALE;
-		this.my = e.getY() / SCALE;
+		mx = e.getX() / SCALE;
+		my = e.getY() / SCALE;
 	}
 }
