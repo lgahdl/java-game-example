@@ -14,7 +14,7 @@ import com.histudio.utils.CollisionBox;
 public class World {
 
 	public static Tile[] tiles;
-	public static int WIDTH, HEIGHT;
+	public int WIDTH, HEIGHT;
 	public static final int TILE_SIZE = 32;
 
 	public World(String path) {
@@ -75,9 +75,9 @@ public class World {
 	}
 
 	public World(int width, int height, int pathSize) {
-		WIDTH = width;
-		HEIGHT = height;
-		tiles = new Tile[WIDTH * HEIGHT];
+		this.WIDTH = width;
+		this.HEIGHT = height;
+		tiles = new Tile[this.WIDTH * this.HEIGHT];
 		for (int i = 0; i < WIDTH; i++) {
 			for (int j = 0; j < HEIGHT; j++) {
 				tiles[i + j * WIDTH] = new WallTile(i * 32, j * 32, Tile.TILE_WALL);
@@ -147,7 +147,7 @@ public class World {
 		}
 	}
 
-	public static boolean isBorder(int xNext, int yNext) {
+	public boolean isBorder(int xNext, int yNext) {
 		int x1 = xNext / TILE_SIZE;
 		int y1 = yNext / TILE_SIZE;
 
@@ -159,13 +159,13 @@ public class World {
 
 		int x4 = (xNext + TILE_SIZE - 1) / TILE_SIZE;
 		int y4 = (yNext + TILE_SIZE - 1) / TILE_SIZE;
-		if (x1 == 0 || y1 == 0 || x2 == World.WIDTH - 1 || y3 == World.HEIGHT - 1) {
+		if (x1 == 0 || y1 == 0 || x2 == this.WIDTH - 1 || y3 == this.HEIGHT - 1) {
 			return true;
 		}
 		return false;
 	}
 
-	public static boolean isFree(int xNext, int yNext) {
+	public boolean isFree(int xNext, int yNext) {
 
 		int x1 = xNext / TILE_SIZE;
 		int y1 = yNext / TILE_SIZE;
@@ -179,13 +179,13 @@ public class World {
 		int x4 = (xNext + TILE_SIZE - 1) / TILE_SIZE;
 		int y4 = (yNext + TILE_SIZE - 1) / TILE_SIZE;
 
-		return !(tiles[x1 + (y1 * World.WIDTH)] instanceof WallTile
-				|| tiles[x2 + (y2 * World.WIDTH)] instanceof WallTile
-				|| tiles[x3 + (y3 * World.WIDTH)] instanceof WallTile
-				|| tiles[x4 + (y4 * World.WIDTH)] instanceof WallTile);
+		return !(tiles[x1 + (y1 * this.WIDTH)] instanceof WallTile
+				|| tiles[x2 + (y2 * this.WIDTH)] instanceof WallTile
+				|| tiles[x3 + (y3 * this.WIDTH)] instanceof WallTile
+				|| tiles[x4 + (y4 * this.WIDTH)] instanceof WallTile);
 	}
 
-	public static boolean isFree(int xNext, int yNext, int xNegativeOffset, int yNegativeOffset) {
+	public boolean isFree(int xNext, int yNext, int xNegativeOffset, int yNegativeOffset) {
 		int x1 = xNext / TILE_SIZE;
 		int y1 = yNext / TILE_SIZE;
 
@@ -198,13 +198,13 @@ public class World {
 		int x4 = (xNext + xNegativeOffset - 1) / TILE_SIZE;
 		int y4 = (yNext + yNegativeOffset - 1) / TILE_SIZE;
 
-		return !(tiles[x1 + (y1 * World.WIDTH)] instanceof WallTile
-				|| tiles[x2 + (y2 * World.WIDTH)] instanceof WallTile
-				|| tiles[x3 + (y3 * World.WIDTH)] instanceof WallTile
-				|| tiles[x4 + (y4 * World.WIDTH)] instanceof WallTile);
+		return !(tiles[x1 + (y1 * this.WIDTH)] instanceof WallTile
+				|| tiles[x2 + (y2 * this.WIDTH)] instanceof WallTile
+				|| tiles[x3 + (y3 * this.WIDTH)] instanceof WallTile
+				|| tiles[x4 + (y4 * this.WIDTH)] instanceof WallTile);
 	}
 
-	public static boolean isFree(int xNext, int yNext, int maskOffsetX, int maskOffsetY, int maskWidth,
+	public boolean isFree(int xNext, int yNext, int maskOffsetX, int maskOffsetY, int maskWidth,
 			int maskHeight) {
 		int x1 = (xNext + maskOffsetX) / TILE_SIZE;
 		int y1 = (yNext + maskOffsetY) / TILE_SIZE;
@@ -218,13 +218,13 @@ public class World {
 		int x4 = (xNext + (maskOffsetX + maskWidth) - 1) / TILE_SIZE;
 		int y4 = (yNext + (maskOffsetY + maskHeight) - 1) / TILE_SIZE;
 
-		return !(tiles[x1 + (y1 * World.WIDTH)] instanceof WallTile
-				|| tiles[x2 + (y2 * World.WIDTH)] instanceof WallTile
-				|| tiles[x3 + (y3 * World.WIDTH)] instanceof WallTile
-				|| tiles[x4 + (y4 * World.WIDTH)] instanceof WallTile);
+		return !(tiles[x1 + (y1 * this.WIDTH)] instanceof WallTile
+				|| tiles[x2 + (y2 * this.WIDTH)] instanceof WallTile
+				|| tiles[x3 + (y3 * this.WIDTH)] instanceof WallTile
+				|| tiles[x4 + (y4 * this.WIDTH)] instanceof WallTile);
 	}
 
-	public static boolean isFree(CollisionBox collisionBox) {
+	public boolean isFree(CollisionBox collisionBox) {
 
 		int collisionBoxInitialX = collisionBox.x;
 		int collisionBoxFinalX = collisionBox.x + collisionBox.width;
@@ -243,15 +243,15 @@ public class World {
 		int x4 = (collisionBoxFinalX - 1) / TILE_SIZE;
 		int y4 = (collisionBoxFinalY - 1) / TILE_SIZE;
 
-		boolean response = !(tiles[x1 + (y1 * World.WIDTH)] instanceof WallTile
-				|| tiles[x2 + (y2 * World.WIDTH)] instanceof WallTile
-				|| tiles[x3 + (y3 * World.WIDTH)] instanceof WallTile
-				|| tiles[x4 + (y4 * World.WIDTH)] instanceof WallTile);
+		boolean response = !(tiles[x1 + (y1 * this.WIDTH)] instanceof WallTile
+				|| tiles[x2 + (y2 * this.WIDTH)] instanceof WallTile
+				|| tiles[x3 + (y3 * this.WIDTH)] instanceof WallTile
+				|| tiles[x4 + (y4 * this.WIDTH)] instanceof WallTile);
 
 		return response;
 	}
 
-	public static void revealMap(int x, int y) {
+	public void revealMap(int x, int y) {
 		int x1 = x / TILE_SIZE;
 		int y1 = y / TILE_SIZE;
 		int x2 = (x + TILE_SIZE - 1) / TILE_SIZE;
@@ -259,7 +259,7 @@ public class World {
 
 		for (int i = x1 - 2; i < x2 + 2; i++) {
 			for (int j = y1 - 2; j < y2 + 2; j++) {
-				int curTile = i + j * World.WIDTH;
+				int curTile = i + j * this.WIDTH;
 				curTile = curTile > 0 ? curTile < tiles.length ? curTile : 0 : 0;
 				tiles[curTile].show = true;
 

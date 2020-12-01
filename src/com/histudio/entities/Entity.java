@@ -9,6 +9,7 @@ import java.util.List;
 
 import com.histudio.main.Game;
 import com.histudio.utils.CollisionBox;
+import com.histudio.utils.QuadTreePoint;
 import com.histudio.world.Camera;
 import com.histudio.world.Node;
 import com.histudio.world.Vector2i;
@@ -27,6 +28,8 @@ public class Entity {
 	protected int height;
 
 	public CollisionBox collisionBox;
+	
+	public QuadTreePoint quadTreePoint;
 
 	protected BufferedImage sprite;
 
@@ -37,6 +40,7 @@ public class Entity {
 		this.height = height;
 		this.collisionBox = new CollisionBox(x, y, width, height);
 		this.sprite = sprite;
+		this.quadTreePoint = new QuadTreePoint(this);
 	}
 
 	public Entity(int x, int y, int width, int height, BufferedImage sprite, CollisionBox collisionBox) {

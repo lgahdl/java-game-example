@@ -29,35 +29,31 @@ public class FireballShoot extends Entity {
 		this.dy = dy;
 		this.collisionBox = new CollisionBox(x, y, width, height);
 		this.damage = damage;
-		this.range = new Rectangle(x-200, y-200, 400, 400);
+		this.range = new Rectangle(x - 200, y - 200, 400, 400);
 	}
 
 	@Override
 	public void tick() {
 		int xNext = (int) (x + (dx * speed));
 		int yNext = (int) (y + (dy * speed));
-		this.range.x+=dx*speed;
-		this.range.y+=dy*speed;
+		this.range.x += dx * speed;
+		this.range.y += dy * speed;
 		curTime++;
 		x = xNext;
 		y = yNext;
 		CollisionBox nextPositionCollider = new CollisionBox(xNext, yNext, this.collisionBox.width,
 				this.collisionBox.height);
-		if (!World.isFree(nextPositionCollider)) {
+		if (!Game.world.isFree(nextPositionCollider)) {
 			World.generateParticles(200, xNext, yNext);
 			Game.fireballs.remove(this);
 		}
 
-		List<QuadTreePoint> pointsList = Game.entitiesQuadTree.query(this.range);
-		
-		if(pointsList.size()>0) {
-			System.out.println(pointsList.size());
-		}
-		
-		for (int i = 0; i < pointsList.size(); i++) {
-			System.out.println("Entity "+ i + " X:" + pointsList.get(i).entity.x);
-			if (isColliding(this, pointsList.get(i).entity)) {
-				pointsList.get(i).entity.onTriggerCollider(this);
+		List<Entity> entities = Game.entitiesQuadTree.query(this.range);
+
+		for (int i = 0; i < entities.size(); i++) {
+			Entity e = entities.get(i);
+			if (isColliding(this, e)) {
+				e.onTriggerCollider(this);
 			}
 		}
 
@@ -81,9 +77,9 @@ public class FireballShoot extends Entity {
 		g.setColor(Color.YELLOW);
 		g.fillOval(this.getX() - Camera.x, this.getY() - Camera.y, this.width, this.height);
 	}
-	
+
 	private void renderRangeBox(Graphics g) {
-		g.fillRect(this.range.x-Camera.x, this.range.y-Camera.y, this.range.width, this.range.height);
+		g.fillRect(this.range.x - Camera.x, this.range.y - Camera.y, this.range.width, this.range.height);
 	}
 
 }

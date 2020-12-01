@@ -36,7 +36,7 @@ public class UI {
 	public List<String> dialoguePhrases;
 
 	public UI() {
-		minimap = new BufferedImage(World.WIDTH, World.HEIGHT, BufferedImage.TYPE_INT_RGB);
+		minimap = new BufferedImage(Game.world.WIDTH, Game.world.HEIGHT, BufferedImage.TYPE_INT_RGB);
 		minimapPixels = ((DataBufferInt) minimap.getRaster().getDataBuffer()).getData();
 		minimapColors = new HashMap<String, Integer>();
 		setMinimapColors();
@@ -82,21 +82,21 @@ public class UI {
 		for (int i = 0; i < minimapPixels.length; i++) {
 			minimapPixels[i] = minimapColors.get("default");
 		}
-		for (int xx = 0; xx < World.WIDTH; xx++) {
-			for (int yy = 0; yy < World.HEIGHT; yy++) {
-				if (World.tiles[xx + (yy * World.WIDTH)] instanceof WallTile) {
-					minimapPixels[xx + (yy * World.WIDTH)] = minimapColors.get("wall");
+		for (int xx = 0; xx < Game.world.WIDTH; xx++) {
+			for (int yy = 0; yy < Game.world.HEIGHT; yy++) {
+				if (World.tiles[xx + (yy * Game.world.WIDTH)] instanceof WallTile) {
+					minimapPixels[xx + (yy * Game.world.WIDTH)] = minimapColors.get("wall");
 				}
 			}
 		}
 	}
 
 	public void renderOnMinimap(int x, int y, String key) {
-		minimapPixels[x + (y * World.WIDTH)] = minimapColors.get(key);
+		minimapPixels[x + (y * Game.world.WIDTH)] = minimapColors.get(key);
 	}
 
 	public void renderMinimap(Graphics g) {
-		g.drawImage(minimap, 5, Game.getHEIGHT() - World.WIDTH - 5, World.WIDTH, World.HEIGHT, null);
+		g.drawImage(minimap, 5, Game.getHEIGHT() - Game.world.WIDTH - 5, Game.world.WIDTH, Game.world.HEIGHT, null);
 		setWorldMinimapPixels();
 	}
 

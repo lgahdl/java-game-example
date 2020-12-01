@@ -11,9 +11,7 @@ public class QuadTreePoint {
 
 	public Entity entity;
 
-	public QuadTreePoint(int x, int y, Entity entity) {
-		this.x = x;
-		this.y = y;
+	public QuadTreePoint(Entity entity) {
 		this.entity = entity;
 	}
 }

@@ -199,8 +199,8 @@ public class Player extends Entity {
 		if (enemy.getX() > this.getX()) {
 			nextPositionCollider = new CollisionBox(this.collisionBox.x - (int) speed, this.collisionBox.y,
 					this.collisionBox.width, this.collisionBox.height, this);
-			if (World.isFree(nextPositionCollider)
-					|| (!World.isBorder(this.getX() + (int) speed, this.getY()) && this.getIsJumping())) {
+			if (Game.world.isFree(nextPositionCollider)
+					|| (!Game.world.isBorder(this.getX() + (int) speed, this.getY()) && this.getIsJumping())) {
 				moved = true;
 				this.setX((int) (x - speed));
 				this.collisionBox = nextPositionCollider;
@@ -264,8 +264,8 @@ public class Player extends Entity {
 				isRight = true;
 				nextPositionCollider = new CollisionBox((int) Math.round(this.collisionBox.x + speed),
 						this.collisionBox.y, this.collisionBox.width, this.collisionBox.height, this);
-				if (World.isFree(nextPositionCollider)
-						|| (!World.isBorder(this.getX() + (int) (speed), this.getY()) && this.getIsJumping())) {
+				if (Game.world.isFree(nextPositionCollider)
+						|| (!Game.world.isBorder(this.getX() + (int) (speed), this.getY()) && this.getIsJumping())) {
 					moved = true;
 					this.setX((int) Math.round(x + speed));
 					this.collisionBox = nextPositionCollider;
@@ -278,8 +278,8 @@ public class Player extends Entity {
 				isRight = false;
 				nextPositionCollider = new CollisionBox((int) Math.round(this.collisionBox.x - speed),
 						this.collisionBox.y, this.collisionBox.width, this.collisionBox.height, this);
-				if (World.isFree(nextPositionCollider)
-						|| (!World.isBorder(this.getX() - (int) (speed), this.getY()) && this.getIsJumping())) {
+				if (Game.world.isFree(nextPositionCollider)
+						|| (!Game.world.isBorder(this.getX() - (int) (speed), this.getY()) && this.getIsJumping())) {
 					moved = true;
 					this.setX((int) Math.round((x - speed)));
 					this.collisionBox = nextPositionCollider;
@@ -294,8 +294,8 @@ public class Player extends Entity {
 				nextPositionCollider = new CollisionBox(this.collisionBox.x,
 						(int) Math.round(this.collisionBox.y - speed), this.collisionBox.width,
 						this.collisionBox.height, this);
-				if (World.isFree(nextPositionCollider)
-						|| (!World.isBorder(this.getX(), this.getY() - (int) (speed)) && this.getIsJumping())) {
+				if (Game.world.isFree(nextPositionCollider)
+						|| (!Game.world.isBorder(this.getX(), this.getY() - (int) (speed)) && this.getIsJumping())) {
 					moved = true;
 					this.setY((int) Math.round(y - speed));
 					this.collisionBox = nextPositionCollider;
@@ -309,8 +309,8 @@ public class Player extends Entity {
 				nextPositionCollider = new CollisionBox(this.collisionBox.x,
 						(int) Math.round(this.collisionBox.y + speed), this.collisionBox.width,
 						this.collisionBox.height, this);
-				if (World.isFree(nextPositionCollider)
-						|| (!World.isBorder(this.getX(), this.getY() + (int) (speed)) && this.getIsJumping())) {
+				if (Game.world.isFree(nextPositionCollider)
+						|| (!Game.world.isBorder(this.getX(), this.getY() + (int) (speed)) && this.getIsJumping())) {
 					moved = true;
 					this.setY((int) Math.round(y + speed));
 					this.collisionBox = nextPositionCollider;
@@ -323,7 +323,7 @@ public class Player extends Entity {
 				} else if (speed > maxSpeed) {
 					speed -= acceleration;
 				}
-				World.revealMap(this.getX(), this.getY());
+				Game.world.revealMap(this.getX(), this.getY());
 				frames++;
 				if (frames >= maxFrames) {
 					frames = 0;
@@ -405,8 +405,8 @@ public class Player extends Entity {
 	}
 
 	public void setCamera() {
-		Camera.x = Camera.clamp(this.getX() - (Game.getWIDTH() / 2), 0, World.WIDTH * 32 - Game.getWIDTH());
-		Camera.y = Camera.clamp(this.getY() - (Game.getHEIGHT() / 2), 0, World.HEIGHT * 32 - Game.getHEIGHT());
+		Camera.x = Camera.clamp(this.getX() - (Game.getWIDTH() / 2), 0, Game.world.WIDTH * 32 - Game.getWIDTH());
+		Camera.y = Camera.clamp(this.getY() - (Game.getHEIGHT() / 2), 0, Game.world.HEIGHT * 32 - Game.getHEIGHT());
 	}
 
 	@Override

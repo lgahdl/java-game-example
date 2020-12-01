@@ -221,7 +221,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public void tick() {
 		if (gameState == "PLAYING") {
 			entitiesQuadTree = new QuadTree(
-					new Rectangle(0, 0, World.WIDTH * World.TILE_SIZE, World.HEIGHT * World.TILE_SIZE), 5);
+					new Rectangle(0, 0, world.WIDTH*32, world.HEIGHT*32), 5);
 			if (player.getLife() <= 0) {
 				gameState = "GAMEOVER";
 			}
@@ -235,15 +235,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 			for (int i = 0; i < entities.size(); i++) {
 				Entity e = entities.get(i);
-				entitiesQuadTree.insert(new QuadTreePoint(e.getX(), e.getY(), e));
+				entitiesQuadTree.insert(e);
 			}
 			for (int i = 0; i < entities.size(); i++) {
 				Entity e = entities.get(i);
-				if (e instanceof Player) {
-				}
 				e.tick();
 			}
-
 			for (int i = 0; i < fireballs.size(); i++) {
 				fireballs.get(i).tick();
 			}
@@ -356,6 +353,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 
 			if (System.currentTimeMillis() - timer >= 1000) {
+				System.out.println(frames);
 				frames = 0;
 				timer += 1000;
 			}

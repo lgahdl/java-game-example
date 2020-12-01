@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import com.histudio.main.Game;
 import com.histudio.world.Node;
 import com.histudio.world.Tile;
 import com.histudio.world.Vector2i;
@@ -67,33 +68,33 @@ public class AStar {
 				int y = current.tile.y;
 				int xi = (i % 3) - 1;
 				int yi = (i / 3) - 1;
-				Tile tile = World.tiles[x + xi + ((y + yi) * World.WIDTH)];
+				Tile tile = World.tiles[x + xi + ((y + yi) * Game.world.WIDTH)];
 				if (tile == null)
 					continue;
 				if (tile instanceof WallTile)
 					continue;
 
 				if (i == 0) {
-					Tile test = World.tiles[x + xi + 1 + (y + yi) * World.WIDTH];
-					Tile test2 = World.tiles[x + xi + (y + yi + 1) * World.WIDTH];
+					Tile test = World.tiles[x + xi + 1 + (y + yi) * Game.world.WIDTH];
+					Tile test2 = World.tiles[x + xi + (y + yi + 1) * Game.world.WIDTH];
 					if (test instanceof WallTile || test2 instanceof WallTile) {
 						continue;
 					}
 				} else if (i == 2) {
-					Tile test = World.tiles[x + xi - 1 + (y + yi) * World.WIDTH];
-					Tile test2 = World.tiles[x + xi + (y + yi + 1) * World.WIDTH];
+					Tile test = World.tiles[x + xi - 1 + (y + yi) * Game.world.WIDTH];
+					Tile test2 = World.tiles[x + xi + (y + yi + 1) * Game.world.WIDTH];
 					if (test instanceof WallTile || test2 instanceof WallTile) {
 						continue;
 					}
 				} else if (i == 6) {
-					Tile test = World.tiles[x + xi + 1 + (y + yi) * World.WIDTH];
-					Tile test2 = World.tiles[x + xi + (y + yi - 1) * World.WIDTH];
+					Tile test = World.tiles[x + xi + 1 + (y + yi) * Game.world.WIDTH];
+					Tile test2 = World.tiles[x + xi + (y + yi - 1) * Game.world.WIDTH];
 					if (test instanceof WallTile || test2 instanceof WallTile) {
 						continue;
 					}
 				} else if (i == 8) {
-					Tile test = World.tiles[x + xi - 1 + (y + yi) * World.WIDTH];
-					Tile test2 = World.tiles[x + xi + (y + yi - 1) * World.WIDTH];
+					Tile test = World.tiles[x + xi - 1 + (y + yi) * Game.world.WIDTH];
+					Tile test2 = World.tiles[x + xi + (y + yi - 1) * Game.world.WIDTH];
 					if (test instanceof WallTile || test2 instanceof WallTile) {
 						continue;
 					}

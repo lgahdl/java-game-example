@@ -13,7 +13,7 @@ public class Tile {
 	private BufferedImage sprite;
 	private int x, y;
 	
-	public boolean show = false;
+	public boolean show = true;
 	
 	public Tile(int x, int y, BufferedImage sprite) {
 		this.x = x;

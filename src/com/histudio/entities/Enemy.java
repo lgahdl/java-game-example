@@ -138,6 +138,7 @@ public class Enemy extends Entity {
 		case "FireballShoot":
 			FireballShoot fireball = (FireballShoot) object;
 			this.getHit(fireball.damage);
+			Game.fireballs.remove(fireball);
 			break;
 		default:
 			((Entity) object).onTriggerCollider(this);
@@ -173,7 +174,7 @@ public class Enemy extends Entity {
 					// GOING RIGHT
 					nextPositionCollider = new CollisionBox(this.collisionBox.x + (int) Math.round(speed),
 							this.collisionBox.y, this.collisionBox.width, this.collisionBox.height, this);
-					if (World.isFree(nextPositionCollider) && !isCollidingWithEnemy((int) (x + speed), this.getY())) {
+					if (Game.world.isFree(nextPositionCollider) && !isCollidingWithEnemy((int) (x + speed), this.getY())) {
 						x += speed;
 						moved = true;
 						this.collisionBox = nextPositionCollider;
@@ -188,7 +189,7 @@ public class Enemy extends Entity {
 					// GOING LEFT
 					nextPositionCollider = new CollisionBox(this.collisionBox.x - (int) Math.round(speed),
 							this.collisionBox.y, this.collisionBox.width, this.collisionBox.height, this);
-					if (World.isFree(nextPositionCollider)
+					if (Game.world.isFree(nextPositionCollider)
 							&& !this.isCollidingWithEnemy((int) (x - speed), this.getY())) {
 						x -= speed;
 						moved = true;
@@ -206,7 +207,7 @@ public class Enemy extends Entity {
 					nextPositionCollider = new CollisionBox(this.collisionBox.x,
 							this.collisionBox.y + (int) Math.round(speed), this.collisionBox.width,
 							this.collisionBox.height, this);
-					if (World.isFree(nextPositionCollider) && !isCollidingWithEnemy(this.getX(), (int) (y + speed))) {
+					if (Game.world.isFree(nextPositionCollider) && !isCollidingWithEnemy(this.getX(), (int) (y + speed))) {
 						y += speed;
 						moved = true;
 						this.collisionBox = nextPositionCollider;
@@ -216,7 +217,7 @@ public class Enemy extends Entity {
 					nextPositionCollider = new CollisionBox(this.collisionBox.x,
 							this.collisionBox.y - (int) Math.round(speed), this.collisionBox.width,
 							this.collisionBox.height, this);
-					if (World.isFree(nextPositionCollider) && !isCollidingWithEnemy(this.getX(), (int) (y - speed))) {
+					if (Game.world.isFree(nextPositionCollider) && !isCollidingWithEnemy(this.getX(), (int) (y - speed))) {
 						y -= speed;
 						moved = true;
 						this.collisionBox = nextPositionCollider;
