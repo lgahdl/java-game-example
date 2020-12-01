@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import com.histudio.main.Game;
+import com.histudio.utils.CollisionBox;
 import com.histudio.world.Camera;
 import com.histudio.world.Node;
 import com.histudio.world.Vector2i;
@@ -25,16 +26,26 @@ public class Entity {
 	protected int width;
 	protected int height;
 
-	protected BufferedImage sprite;
+	public CollisionBox collisionBox;
 
-	public int maskx = 8, masky = 8, maskWidth = 16, maskHeight = 16;
+	protected BufferedImage sprite;
 
 	public Entity(int x, int y, int width, int height, BufferedImage sprite) {
 		this.x = x;
 		this.y = y;
 		this.width = width;
 		this.height = height;
+		this.collisionBox = new CollisionBox(x, y, width, height);
 		this.sprite = sprite;
+	}
+
+	public Entity(int x, int y, int width, int height, BufferedImage sprite, CollisionBox collisionBox) {
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+		this.sprite = sprite;
+		this.collisionBox = collisionBox;
 	}
 
 	public int getX() {
@@ -43,6 +54,7 @@ public class Entity {
 
 	public void setX(int x) {
 		this.x = x;
+		this.collisionBox.x = x;
 		return;
 	}
 
@@ -52,6 +64,7 @@ public class Entity {
 
 	public void setY(int y) {
 		this.y = y;
+		this.collisionBox.y = y;
 	}
 
 	public int getWidth() {
@@ -62,11 +75,12 @@ public class Entity {
 		return this.height;
 	}
 
-	public void setMask(int maskx, int masky, int maskWidth, int maskHeight) {
-		this.maskx = maskx;
-		this.masky = masky;
-		this.maskWidth = maskWidth;
-		this.maskHeight = maskHeight;
+	public CollisionBox getCollisionBox() {
+		return this.collisionBox;
+	}
+
+	public void setCollisionBox(CollisionBox collisionBox) {
+		this.collisionBox = collisionBox;
 	}
 
 	public static Comparator<Entity> depthSorter = new Comparator<Entity>() {
@@ -89,12 +103,8 @@ public class Entity {
 		return Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y2 - y1), 2));
 	}
 
-	public static boolean isColliding(Entity e1, Entity e2) {
-		Rectangle e1Mask = new Rectangle(e1.getX() + e1.maskx - Camera.x, e1.getY() + e1.masky - Camera.y, e1.maskWidth,
-				e1.maskHeight);
-		Rectangle e2Mask = new Rectangle(e2.getX() + e2.maskx - Camera.x, e2.getY() + e2.masky - Camera.y, e2.maskWidth,
-				e2.maskHeight);
-		return e2Mask.intersects(e1Mask);
+	public boolean isColliding(Entity e1, Entity e2) {
+		return e1.collisionBox.intersects(e2.collisionBox);
 	}
 
 	public void render(Graphics g) {
@@ -104,6 +114,12 @@ public class Entity {
 
 	private void renderCollisionBox(Graphics g) {
 		g.setColor(Color.BLUE);
-		g.fillRect(this.getX() + maskx - Camera.x, this.getY() + masky - Camera.y, this.maskWidth, this.maskHeight);
+		g.fillRect(this.collisionBox.x - Camera.x, this.collisionBox.y - Camera.y, this.collisionBox.width,
+				this.collisionBox.height);
 	}
+	
+	public void onTriggerCollider(Object object) {
+		System.out.println("OnTriggerCollider:" + object.getClass().getSimpleName());
+	}
+	
 }

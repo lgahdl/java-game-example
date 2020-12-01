@@ -31,7 +31,7 @@ public class UI {
 
 	public int animPhraseIndex = 0, phraseIndex = 0, animTime = 0, animMaxTime = 3;
 
-	public boolean dialogue = false, dialogueClosed=false;
+	public boolean dialogue = false, dialogueClosed = false;
 
 	public List<String> dialoguePhrases;
 
@@ -70,11 +70,12 @@ public class UI {
 
 	public void renderMana(Graphics g) {
 		g.setColor(Color.RED);
-		g.fillRect(Game.WIDTH - 105, 5, 100, 15);
+		g.fillRect(Game.getWIDTH() - 105, 5, 100, 15);
 		g.setColor(Color.BLUE);
-		g.fillRect(Game.WIDTH - 105, 5, (int) ((Game.player.getMana() / Game.player.getMaxMana()) * 100), 15);
+		g.fillRect(Game.getWIDTH() - 105, 5, (int) ((Game.player.getMana() / Game.player.getMaxMana()) * 100), 15);
 		g.setColor(Color.WHITE);
-		g.drawString("Mana: " + (int) ((Game.player.getMana() / Game.player.getMaxMana()) * 100), Game.WIDTH - 96, 19);
+		g.drawString("Mana: " + (int) ((Game.player.getMana() / Game.player.getMaxMana()) * 100), Game.getWIDTH() - 96,
+				19);
 	}
 
 	public void setWorldMinimapPixels() {
@@ -95,7 +96,7 @@ public class UI {
 	}
 
 	public void renderMinimap(Graphics g) {
-		g.drawImage(minimap, 5, Game.HEIGHT - World.WIDTH - 5, World.WIDTH, World.HEIGHT, null);
+		g.drawImage(minimap, 5, Game.getHEIGHT() - World.WIDTH - 5, World.WIDTH, World.HEIGHT, null);
 		setWorldMinimapPixels();
 	}
 
@@ -142,14 +143,14 @@ public class UI {
 	public void renderGameOver(Graphics g) {
 		Graphics2D g2 = (Graphics2D) g;
 		g2.setColor(new Color(0, 0, 0, 100));
-		g2.fillRect(0, 0, Game.WIDTH, Game.HEIGHT);
+		g2.fillRect(0, 0, Game.getWIDTH(), Game.getHEIGHT());
 		g.setColor(Color.RED);
 		g.setFont(new Font("arial", Font.BOLD, 42));
-		g.drawString("GAME OVER", (Game.WIDTH / 2 - 130), Game.HEIGHT / 2);
+		g.drawString("GAME OVER", (Game.getWIDTH() / 2 - 130), Game.getHEIGHT() / 2);
 		if (showPressSpace) {
 			g.setColor(Color.RED);
 			g.setFont(new Font("arial", Font.BOLD, 20));
-			g.drawString(">press SPACE to restart<", (Game.WIDTH / 2 - 124), Game.HEIGHT / 2 + 40);
+			g.drawString(">press SPACE to restart<", (Game.getWIDTH() / 2 - 124), Game.getHEIGHT() / 2 + 40);
 		}
 		fadingFrames++;
 		if (fadingFrames >= maxFadingFrames) {
@@ -161,17 +162,18 @@ public class UI {
 	public void renderSaveScreen(Graphics g) {
 		Graphics2D g2 = (Graphics2D) g;
 		g2.setColor(new Color(0, 0, 0, 100));
-		g2.fillRect(0, 0, Game.WIDTH, Game.HEIGHT);
+		g2.fillRect(0, 0, Game.getWIDTH(), Game.getHEIGHT());
 		g.setColor(Color.WHITE);
 		g.setFont(new Font("arial", Font.BOLD, 12));
-		g.drawString("Press X to save or Z to continue without save", (Game.WIDTH / 2 - 130), Game.HEIGHT / 2);
+		g.drawString("Press X to save or Z to continue without save", (Game.getWIDTH() / 2 - 130),
+				Game.getHEIGHT() / 2);
 	}
 
 	public void renderDialogue(Graphics g, String phrase) {
 		Graphics g2 = (Graphics2D) g;
 		g2.setColor(new Color(0, 0, 0, 100));
-		int width = Game.WIDTH;
-		int height = Game.HEIGHT;
+		int width = Game.getWIDTH();
+		int height = Game.getHEIGHT();
 		g2.fillRect(width / 6, 3 * height / 4, 2 * width / 3, (height / 4));
 		g2.setColor(new Color(255, 255, 255, 255));
 		g.drawString(phrase, 10 + width / 6, 20 + 3 * height / 4);
@@ -181,8 +183,8 @@ public class UI {
 		if (this.dialogue) {
 			Graphics g2 = (Graphics2D) g;
 			g2.setColor(new Color(0, 0, 0, 100));
-			int width = Game.WIDTH;
-			int height = Game.HEIGHT;
+			int width = Game.getWIDTH();
+			int height = Game.getHEIGHT();
 			g2.fillRect(width / 6, 3 * height / 4, 2 * width / 3, (height / 4));
 			g2.setColor(new Color(255, 255, 255, 255));
 			g.drawString(this.dialoguePhrases.get(phraseIndex).substring(0, animPhraseIndex), 10 + width / 6,
@@ -192,8 +194,8 @@ public class UI {
 				fadingFrames = 0;
 				showPressEnter = !showPressEnter;
 			}
-			if(showPressEnter) {
-				g.drawString("> Press Enter to Close <", width/2-80, height-15);
+			if (showPressEnter) {
+				g.drawString("> Press Enter to Close <", width / 2 - 80, height - 15);
 			}
 		}
 	}

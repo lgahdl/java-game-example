@@ -13,6 +13,7 @@ import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -38,6 +39,8 @@ import com.histudio.entities.FireballShoot;
 import com.histudio.entities.MeleeAttack;
 import com.histudio.entities.Npc;
 import com.histudio.entities.Player;
+import com.histudio.utils.QuadTree;
+import com.histudio.utils.QuadTreePoint;
 import com.histudio.utils.Spritesheet;
 import com.histudio.world.Camera;
 import com.histudio.world.World;
@@ -51,9 +54,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public static JFrame frame;
 	private Thread thread;
 	private boolean isRunning;
-	public static String displayMode = "FULLSCREEN"; // FULLSCREEN or WINDOW
-	public static int WIDTH = 420;
-	public static int HEIGHT = 237;
+	public static String displayMode = "WINDOW"; // FULLSCREEN or WINDOW
+	private static int WIDTH = 420;
+	private static int HEIGHT = 237;
 
 	public static int selectedScreen = 0;
 
@@ -62,7 +65,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	private static BufferedImage image;
 
 	public static List<Entity> entities;
+
+	public static QuadTree entitiesQuadTree;
+
 	public static List<Enemy> enemies;
+
 	public static List<FireballShoot> fireballs;
 
 	public static Spritesheet spritesheet;
@@ -134,6 +141,26 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		player.setCamera();
 	}
 
+	public void setWIDTH(int newWIDTH) {
+		WIDTH = newWIDTH;
+		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
+		lightMap = new int[WIDTH * HEIGHT];
+	}
+
+	public void setHEIGHT(int newHEIGHT) {
+		HEIGHT = newHEIGHT;
+		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
+		lightMap = new int[WIDTH * HEIGHT];
+	}
+
+	public static int getWIDTH() {
+		return WIDTH;
+	}
+
+	public static int getHEIGHT() {
+		return HEIGHT;
+	}
+
 	private void initFrame() {
 		frame = new JFrame("Game");
 		frame.add(this);
@@ -193,7 +220,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	public void tick() {
 		if (gameState == "PLAYING") {
-
+			entitiesQuadTree = new QuadTree(
+					new Rectangle(0, 0, World.WIDTH * World.TILE_SIZE, World.HEIGHT * World.TILE_SIZE), 5);
 			if (player.getLife() <= 0) {
 				gameState = "GAMEOVER";
 			}
@@ -205,7 +233,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				}
 				gameState = "SAVE";
 			}
-
+			for (int i = 0; i < entities.size(); i++) {
+				Entity e = entities.get(i);
+				entitiesQuadTree.insert(new QuadTreePoint(e.getX(), e.getY(), e));
+			}
 			for (int i = 0; i < entities.size(); i++) {
 				Entity e = entities.get(i);
 				if (e instanceof Player) {
@@ -302,8 +333,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 		}
 	}
-	
-	
+
 	@Override
 	public void run() {
 		long lastTime = System.nanoTime();
@@ -365,19 +395,19 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			if (e.getKeyCode() == KeyEvent.VK_K) {
 				player.setShoot(true);
 			}
-			if(e.getKeyCode()==KeyEvent.VK_J) {
+			if (e.getKeyCode() == KeyEvent.VK_J) {
 				player.swordAttack();
 			}
-			
+
 			if (e.getKeyCode() == KeyEvent.VK_SPACE) {
 				Game.player.setJump(true);
 			}
 			if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 				gameState = "MENU";
 			}
-			if(ui.dialogue && e.getKeyCode() == KeyEvent.VK_ENTER) {
-				ui.dialogue=false;
-				ui.dialogueClosed=true;
+			if (ui.dialogue && e.getKeyCode() == KeyEvent.VK_ENTER) {
+				ui.dialogue = false;
+				ui.dialogueClosed = true;
 			}
 			return;
 		}
@@ -444,8 +474,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		int width = (int) screenConfig[0].getBounds().getWidth();
 		int height = (int) screenConfig[0].getBounds().getHeight();
 		setPreferredSize(new Dimension(width, height));
-		WIDTH = width / SCALE;
-		HEIGHT = height / SCALE;
+		setWIDTH(width / SCALE);
+		setHEIGHT(height / SCALE);
 		// frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		frame.setUndecorated(true);
 		frame.setResizable(false);
@@ -515,4 +545,5 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		mx = e.getX() / SCALE;
 		my = e.getY() / SCALE;
 	}
+
 }

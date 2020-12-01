@@ -10,6 +10,7 @@ import java.util.List;
 import com.histudio.main.Game;
 import com.histudio.main.Sound;
 import com.histudio.utils.AStar;
+import com.histudio.utils.CollisionBox;
 import com.histudio.world.Camera;
 import com.histudio.world.Node;
 import com.histudio.world.Vector2i;
@@ -17,13 +18,13 @@ import com.histudio.world.World;
 
 public class Enemy extends Entity {
 
-	private double speed = 0.8;
-
-	public int maskx = 8, masky = 8, maskWidth = 16, maskHeight = 16;
+	private int speed = 2;
 
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 4;
 
-	private int damage = 10, framesToDamage = 15, currentFrameToDamage = 0;
+	public int damage = 10, framesToDamage = 15, currentFrameToDamage = 0;
+
+	public int collisionXOffset = 8, collisionYOffset = 0, collisionBoxWidth = 18, collisionBoxHeight = 32;
 
 	private boolean moved = false;
 	private String direction = "right";
@@ -46,6 +47,8 @@ public class Enemy extends Entity {
 		sprites[2] = Game.spritesheet.getSprite(224, 64, 32, 32);
 		sprites[3] = Game.spritesheet.getSprite(256, 64, 32, 32);
 		feedbackSprite = Game.spritesheet.getSprite(288, 32, 32, 32);
+		this.collisionBox = new CollisionBox(x + collisionXOffset, y + collisionYOffset, collisionBoxWidth,
+				collisionBoxHeight, this);
 		// TODO Auto-generated constructor stub
 	}
 
@@ -55,7 +58,13 @@ public class Enemy extends Entity {
 			Game.entities.remove(this);
 			Game.enemies.remove(this);
 		}
-		this.collidingPlayer();
+		if (this.isColliding(this, Game.player)) {
+			currentFrameToDamage++;
+			if (currentFrameToDamage >= framesToDamage) {
+				currentFrameToDamage = 0;
+				Game.player.onTriggerCollider(this);
+			}
+		}
 		double distance = calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY());
 		if (distance < 100) {
 			isActive = true;
@@ -64,8 +73,7 @@ public class Enemy extends Entity {
 		} else {
 			isActive = false;
 		}
-//			if(isActive) {
-//				
+//		if(isActive) {		
 //			if ((int) x < Game.player.getX() && World.isFree((int) (x + speed), this.getY())
 //					&& !isCollidingWithEnemy((int) (x + speed), this.getY())) {
 //				x += speed;
@@ -115,16 +123,6 @@ public class Enemy extends Entity {
 //		Game.ui.renderEnemyOnMinimap(this.getX() / 32, this.getY() / 32);
 	}
 
-	public void collidingFireball() {
-		for (int i = 0; i < Game.fireballs.size(); i++) {
-			FireballShoot e = Game.fireballs.get(i);
-			e.setMask(FireballShoot.maskx, FireballShoot.masky, FireballShoot.maskHeight, FireballShoot.maskWidth);
-			if (this.isCollidingWithFireball(e)) {
-
-			}
-		}
-	}
-
 	public void getHit(int damage) {
 		Sound.enemyDamaged.play();
 		life = life - damage;
@@ -134,39 +132,28 @@ public class Enemy extends Entity {
 		return;
 	}
 
-	public boolean isCollidingWithFireball(FireballShoot e2) {
-		Enemy e1 = this;
-		Rectangle e1Mask = new Rectangle(e1.getX() + e1.maskx - Camera.x, e1.getY() + e1.masky - Camera.y, e1.maskWidth,
-				e1.maskHeight);
-		Rectangle e2Mask = new Rectangle(e2.getX() + e2.maskx - Camera.x, e2.getY() + e2.masky - Camera.y, e2.maskWidth,
-				e2.maskHeight);
-		return e2Mask.intersects(e1Mask);
-	}
-
-	public void collidingPlayer() {
-		if (isCollidingWithPlayer()) {
-			currentFrameToDamage++;
-			if (currentFrameToDamage >= framesToDamage) {
-				currentFrameToDamage = 0;
-				Game.player.takeDamage(this.damage);
-			}
+	public void onTriggerCollider(Object object) {
+		String className = object.getClass().getSimpleName();
+		switch (className) {
+		case "FireballShoot":
+			FireballShoot fireball = (FireballShoot) object;
+			this.getHit(fireball.damage);
+			break;
+		default:
+			((Entity) object).onTriggerCollider(this);
+			System.out.println("Enemy Trigger not configured for:" + className);
+			break;
 		}
 	}
 
-	public boolean isCollidingWithPlayer() {
-		Rectangle currentEnemy = new Rectangle(this.getX() + maskx, this.getY() + masky, maskWidth, maskHeight);
-		Rectangle player = new Rectangle(Game.player.getX(), Game.player.getY(), World.TILE_SIZE, World.TILE_SIZE);
-		return currentEnemy.intersects(player);
-	}
-
 	public boolean isCollidingWithEnemy(int xnext, int ynext) {
-		Rectangle currentEnemy = new Rectangle(xnext + maskx, ynext + masky, maskWidth, maskHeight);
+		Rectangle currentEnemy = new Rectangle(this.collisionBox);
 		for (int i = 0; i < Game.enemies.size(); i++) {
 			Enemy e = Game.enemies.get(i);
 			if (e == this) {
 				continue;
 			}
-			Rectangle targetEnemy = new Rectangle(e.getX() + maskx, e.getY() + masky, maskWidth, maskHeight);
+			Rectangle targetEnemy = new Rectangle(e.collisionBox);
 			if (currentEnemy.intersects(targetEnemy)) {
 				return true;
 			}
@@ -180,12 +167,16 @@ public class Enemy extends Entity {
 		if (path != null) {
 			if (path.size() > 0) {
 
+				CollisionBox nextPositionCollider = this.collisionBox;
 				Vector2i target = path.get(path.size() - 1).tile;
 				if (x < target.x * 32) {
-					if (World.isFree((int) (x + speed), this.getY(), this.maskx, this.masky, this.maskWidth,
-							this.maskHeight) && !isCollidingWithEnemy((int) (x + speed), this.getY())) {
+					// GOING RIGHT
+					nextPositionCollider = new CollisionBox(this.collisionBox.x + (int) Math.round(speed),
+							this.collisionBox.y, this.collisionBox.width, this.collisionBox.height, this);
+					if (World.isFree(nextPositionCollider) && !isCollidingWithEnemy((int) (x + speed), this.getY())) {
 						x += speed;
 						moved = true;
+						this.collisionBox = nextPositionCollider;
 						if (canChangeDirection) {
 							direction = "right";
 							canChangeDirection = false;
@@ -194,10 +185,14 @@ public class Enemy extends Entity {
 						}
 					}
 				} else if (x > target.x * 32) {
-					if (World.isFree((int) (x - speed), this.getY(), this.maskx, this.masky, this.maskWidth,
-							this.maskHeight) && !this.isCollidingWithEnemy((int) (x - speed), this.getY())) {
+					// GOING LEFT
+					nextPositionCollider = new CollisionBox(this.collisionBox.x - (int) Math.round(speed),
+							this.collisionBox.y, this.collisionBox.width, this.collisionBox.height, this);
+					if (World.isFree(nextPositionCollider)
+							&& !this.isCollidingWithEnemy((int) (x - speed), this.getY())) {
 						x -= speed;
 						moved = true;
+						this.collisionBox = nextPositionCollider;
 						if (canChangeDirection) {
 							direction = "left";
 							canChangeDirection = false;
@@ -207,16 +202,24 @@ public class Enemy extends Entity {
 					}
 				}
 				if (y < target.y * 32) {
-					if (World.isFree(this.getX(), (int) (y + speed), this.maskx, this.masky, this.maskWidth,
-							this.maskHeight) && !isCollidingWithEnemy(this.getX(), (int) (y + speed))) {
+					// GOING DOWN
+					nextPositionCollider = new CollisionBox(this.collisionBox.x,
+							this.collisionBox.y + (int) Math.round(speed), this.collisionBox.width,
+							this.collisionBox.height, this);
+					if (World.isFree(nextPositionCollider) && !isCollidingWithEnemy(this.getX(), (int) (y + speed))) {
 						y += speed;
 						moved = true;
+						this.collisionBox = nextPositionCollider;
 					}
 				} else if (y > target.y * 32) {
-					if (World.isFree(this.getX(), (int) (y - speed), this.maskx, this.masky, this.maskWidth,
-							this.maskHeight) && !isCollidingWithEnemy(this.getX(), (int) (y - speed))) {
+					// GOING UP
+					nextPositionCollider = new CollisionBox(this.collisionBox.x,
+							this.collisionBox.y - (int) Math.round(speed), this.collisionBox.width,
+							this.collisionBox.height, this);
+					if (World.isFree(nextPositionCollider) && !isCollidingWithEnemy(this.getX(), (int) (y - speed))) {
 						y -= speed;
 						moved = true;
+						this.collisionBox = nextPositionCollider;
 					}
 				}
 				int tx32 = target.x * 32;
@@ -253,7 +256,9 @@ public class Enemy extends Entity {
 
 	private void renderCollider(Graphics g) {
 		g.setColor(Color.BLUE);
-		g.drawRect(this.getX() + maskx - Camera.x, this.getY() + masky - Camera.y, maskWidth, maskHeight);
+
+		g.drawRect(this.collisionBox.x - Camera.x, this.collisionBox.y - Camera.y, this.collisionBox.width,
+				this.collisionBox.height);
 	}
 
 }

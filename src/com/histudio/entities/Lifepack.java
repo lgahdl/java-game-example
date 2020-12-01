@@ -15,10 +15,23 @@ public class Lifepack extends Entity {
 
 	@Override
 	public void tick() {
-		Game.ui.renderOnMinimap(this.getX()/32, this.getY()/32, "lifepack");
-		if (Lifepack.isColliding(this, Game.player)) {
-			Game.player.setLife(Game.player.getLife() + healingPoints);
+		Game.ui.renderOnMinimap(this.getX() / 32, this.getY() / 32, "lifepack");
+		if (this.isColliding(this, Game.player)) {
+			// Game.player.setLife(Game.player.getLife() + healingPoints);
+			Game.player.onTriggerCollider(this);
+
+		}
+	}
+
+	public void onTriggerCollider(Object object) {
+		switch (object.getClass().getSimpleName()) {
+		case "Player":
+			Player player = (Player) object;
+			player.setLife(player.getLife() + healingPoints);
 			Game.entities.remove(this);
+			break;
+		default:
+			break;
 		}
 	}
 }

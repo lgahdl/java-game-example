@@ -22,8 +22,18 @@ public class Manapack extends Entity {
 	public void tick() {
 		Game.ui.renderOnMinimap(this.getX()/32, this.getY()/32, "manapack");
 		if (this.isColliding(this, Game.player)) {
+			Game.player.onTriggerCollider(this);
+		}
+	}
+	
+	public void onTriggerCollider(Object object) {
+		switch (object.getClass().getSimpleName()) {
+		case "Player":
 			this.manaRegen(Game.player);
 			Game.entities.remove(this);
+			break;
+		default:
+			break;
 		}
 	}
 }

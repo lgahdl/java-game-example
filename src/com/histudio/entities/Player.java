@@ -7,6 +7,7 @@ import java.awt.image.BufferedImage;
 
 import com.histudio.main.Game;
 import com.histudio.main.Sound;
+import com.histudio.utils.CollisionBox;
 import com.histudio.world.Camera;
 import com.histudio.world.World;
 
@@ -16,7 +17,7 @@ public class Player extends Entity {
 
 	public boolean meleeAttacking = false, isAttacking = false;
 
-	public double speed = 1;
+	public double speed = 0, normalMaxSpeed = 2, runningMaxSpeed = 3, acceleration = 0.1;
 
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 7;
 	private boolean moved = false;
@@ -32,7 +33,7 @@ public class Player extends Entity {
 
 	public BufferedImage[] playerDamaged;
 
-	private double life = 100, maxLife = 100;
+	private double life = 70, maxLife = 100;
 
 	private double mana = 70, maxMana = 100;
 
@@ -56,6 +57,8 @@ public class Player extends Entity {
 
 	public int mx, my;
 
+	public int collisionXOffset = 6, collisionYOffset = 12, collisionBoxWidth = 18, collisionBoxHeight = 16;
+
 	public Player(int x, int y, int width, int height, BufferedImage sprite) {
 		super(x, y, width, height, sprite);
 		frontPlayer = new BufferedImage[8];
@@ -70,6 +73,8 @@ public class Player extends Entity {
 			upPlayer[i] = Game.playerSpritesheet.getSprite(32 * i, 96, 32, 32);
 			playerDamaged[i] = Game.playerSpritesheet.getSprite(0, 0, 32, 32);
 		}
+		this.collisionBox = new CollisionBox(x + collisionXOffset, y + collisionYOffset, collisionBoxWidth,
+				collisionBoxHeight, this);
 	}
 
 	public double getLife() {
@@ -149,6 +154,11 @@ public class Player extends Entity {
 		}
 	}
 
+	public void setCollisionBoxPosition(int x, int y) {
+		this.collisionBox.x = x;
+		this.collisionBox.y = y;
+	}
+
 	public void setMouseShoot(boolean value) {
 
 		if (this.weapon instanceof Weapon && this.mana >= 2 && !this.isJumping) {
@@ -184,11 +194,43 @@ public class Player extends Entity {
 		Sound.playerDamaged.play();
 	}
 
+	private void throwBack(Enemy enemy) {
+		CollisionBox nextPositionCollider = this.collisionBox;
+		if (enemy.getX() > this.getX()) {
+			nextPositionCollider = new CollisionBox(this.collisionBox.x - (int) speed, this.collisionBox.y,
+					this.collisionBox.width, this.collisionBox.height, this);
+			if (World.isFree(nextPositionCollider)
+					|| (!World.isBorder(this.getX() + (int) speed, this.getY()) && this.getIsJumping())) {
+				moved = true;
+				this.setX((int) (x - speed));
+				this.collisionBox = nextPositionCollider;
+			}
+		}
+	}
+
+	@Override
+	public void onTriggerCollider(Object object) {
+//		System.out.println(object.getClass().getSimpleName());
+		String className = object.getClass().getSimpleName();
+		switch (className) {
+		case "Enemy":
+			Enemy enemy = (Enemy) object;
+			this.takeDamage(enemy.damage);
+			this.throwBack(enemy);
+			break;
+		default:
+			((Entity) object).onTriggerCollider(this);
+			System.out.println("Player Trigger not implemented for:" + className);
+			break;
+		}
+
+	}
+
 	@Override
 	public void tick() {
 
 		moved = false;
-		double movingSpeed = speed * (isRunning ? 2 : 1);
+		double maxSpeed = isRunning ? runningMaxSpeed : normalMaxSpeed;
 //		if (jump) {
 //			if (this.getIsJumping() == false) {
 //				this.setJump(false);
@@ -211,48 +253,76 @@ public class Player extends Entity {
 //				isJumping = false;
 //			}
 //		}
-
+		CollisionBox nextPositionCollider = this.collisionBox;
 		if (!meleeAttacking) {
+
 			if (right) {
+				if (this.lastPressedMovementKey == "left") {
+					speed = 0;
+				}
 				this.lastPressedMovementKey = "right";
 				isRight = true;
-
-				if (World.isFree(this.getX() + (int) (movingSpeed), this.getY(), this.maskx, this.masky, this.maskWidth,
-						this.maskHeight)
-						|| (!World.isBorder(this.getX() + (int) (movingSpeed), this.getY()) && this.getIsJumping())) {
+				nextPositionCollider = new CollisionBox((int) Math.round(this.collisionBox.x + speed),
+						this.collisionBox.y, this.collisionBox.width, this.collisionBox.height, this);
+				if (World.isFree(nextPositionCollider)
+						|| (!World.isBorder(this.getX() + (int) (speed), this.getY()) && this.getIsJumping())) {
 					moved = true;
-					x += movingSpeed;
+					this.setX((int) Math.round(x + speed));
+					this.collisionBox = nextPositionCollider;
 				}
 			} else if (left) {
+				if (this.lastPressedMovementKey == "right") {
+					speed = 0;
+				}
 				this.lastPressedMovementKey = "left";
 				isRight = false;
-				if (World.isFree(this.getX() - (int) (movingSpeed), this.getY(), this.maskx, this.masky, this.maskWidth,
-						this.maskHeight)
-						|| (!World.isBorder(this.getX() - (int) (movingSpeed), this.getY()) && this.getIsJumping())) {
+				nextPositionCollider = new CollisionBox((int) Math.round(this.collisionBox.x - speed),
+						this.collisionBox.y, this.collisionBox.width, this.collisionBox.height, this);
+				if (World.isFree(nextPositionCollider)
+						|| (!World.isBorder(this.getX() - (int) (speed), this.getY()) && this.getIsJumping())) {
 					moved = true;
-					x -= movingSpeed;
+					this.setX((int) Math.round((x - speed)));
+					this.collisionBox = nextPositionCollider;
 				}
 			}
 			if (up) {
+				if (this.lastPressedMovementKey == "down") {
+					speed = 0;
+				}
 				this.lastPressedMovementKey = "up";
 				isUp = true;
-				if (World.isFree(this.getX(), this.getY() - (int) (movingSpeed), this.maskx, this.masky, this.maskWidth,
-						this.maskHeight)
-						|| (!World.isBorder(this.getX(), this.getY() - (int) (movingSpeed)) && this.getIsJumping())) {
+				nextPositionCollider = new CollisionBox(this.collisionBox.x,
+						(int) Math.round(this.collisionBox.y - speed), this.collisionBox.width,
+						this.collisionBox.height, this);
+				if (World.isFree(nextPositionCollider)
+						|| (!World.isBorder(this.getX(), this.getY() - (int) (speed)) && this.getIsJumping())) {
 					moved = true;
-					y -= movingSpeed;
+					this.setY((int) Math.round(y - speed));
+					this.collisionBox = nextPositionCollider;
 				}
 			} else if (down) {
+				if (this.lastPressedMovementKey == "up") {
+					speed = 0;
+				}
 				this.lastPressedMovementKey = "down";
 				isUp = false;
-				if (World.isFree(this.getX(), this.getY() + (int) (movingSpeed), this.maskx, this.masky, this.maskWidth,
-						this.maskHeight)
-						|| (!World.isBorder(this.getX(), this.getY() + (int) (movingSpeed)) && this.getIsJumping())) {
+				nextPositionCollider = new CollisionBox(this.collisionBox.x,
+						(int) Math.round(this.collisionBox.y + speed), this.collisionBox.width,
+						this.collisionBox.height, this);
+				if (World.isFree(nextPositionCollider)
+						|| (!World.isBorder(this.getX(), this.getY() + (int) (speed)) && this.getIsJumping())) {
 					moved = true;
-					y += movingSpeed;
+					this.setY((int) Math.round(y + speed));
+					this.collisionBox = nextPositionCollider;
 				}
 			}
+
 			if (moved) {
+				if (speed < maxSpeed) {
+					speed += acceleration;
+				} else if (speed > maxSpeed) {
+					speed -= acceleration;
+				}
 				World.revealMap(this.getX(), this.getY());
 				frames++;
 				if (frames >= maxFrames) {
@@ -262,9 +332,9 @@ public class Player extends Entity {
 						index = 0;
 					}
 				}
-			}
-			if (!moved) {
+			} else if (!moved) {
 				index = 0;
+				speed = 0;
 			}
 		}
 
@@ -335,8 +405,8 @@ public class Player extends Entity {
 	}
 
 	public void setCamera() {
-		Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 32 - Game.WIDTH);
-		Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.HEIGHT * 32 - Game.HEIGHT);
+		Camera.x = Camera.clamp(this.getX() - (Game.getWIDTH() / 2), 0, World.WIDTH * 32 - Game.getWIDTH());
+		Camera.y = Camera.clamp(this.getY() - (Game.getHEIGHT() / 2), 0, World.HEIGHT * 32 - Game.getHEIGHT());
 	}
 
 	@Override
@@ -392,7 +462,13 @@ public class Player extends Entity {
 		if (this.meleeAttack != null) {
 			meleeAttack.render(g);
 		}
+		renderCollisionBox(g);
 
 	}
 
+	private void renderCollisionBox(Graphics g) {
+		g.setColor(Color.RED);
+		g.drawRect(this.collisionBox.x - Camera.x, this.collisionBox.y - Camera.y, this.collisionBox.width,
+				this.collisionBox.height);
+	}
 }

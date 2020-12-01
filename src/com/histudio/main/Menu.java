@@ -20,7 +20,7 @@ public class Menu {
 
 	private static String[] options = { "play", "quit" };
 
-	public static int unitHeight = Game.HEIGHT / 100, unitWidth = Game.WIDTH / 100;
+	public static int unitHeight = Game.getHEIGHT() / 100, unitWidth = Game.getWIDTH() / 100;
 
 	public InputStream stream = ClassLoader.getSystemClassLoader().getResourceAsStream("pixelfont.ttf");
 	
@@ -37,7 +37,7 @@ public class Menu {
 	public void render(Graphics g) {
 		Graphics2D g2 = (Graphics2D) g;
 		g2.setColor(new Color(0, 0, 0, 100));
-		g2.fillRect(0, 0, Game.WIDTH * Game.SCALE, Game.HEIGHT * Game.SCALE);
+		g2.fillRect(0, 0, Game.getWIDTH() * Game.SCALE, Game.getHEIGHT() * Game.SCALE);
 		g.setFont(font);
 
 		g.setColor(new Color(135, 135, 100));

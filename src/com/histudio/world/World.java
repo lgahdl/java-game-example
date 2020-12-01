@@ -9,6 +9,7 @@ import javax.imageio.ImageIO;
 
 import com.histudio.entities.*;
 import com.histudio.main.Game;
+import com.histudio.utils.CollisionBox;
 
 public class World {
 
@@ -43,10 +44,10 @@ public class World {
 						Game.entities.add(new Manapack(i * 32, j * 32, 32, 32, Entity.MANAPACK_EN));
 						break;
 					case 0xFF00FFFF: // CIANO
-						Game.entities.add(new Weapon(i * 32, j * 32, 32, 32, Entity.WEAPON_EN, 3));
+						Game.entities.add(new Weapon(i * 32, j * 32, 32, 32, Entity.WEAPON_EN, 1));
 						break;
-					case 0xFF404040: //GRAFITE
-						Game.entities.add(new Sword(i*32, j*32, 32,32,Entity.SWORD_EN,3));
+					case 0xFF404040: // GRAFITE
+						Game.entities.add(new Sword(i * 32, j * 32, 32, 32, Entity.SWORD_EN, 3));
 						break;
 					case 0xFF00FF00: // VERDE
 						Game.entities.add(new Lifepack(i * 32, j * 32, 32, 32, Entity.LIFEPACK_EN));
@@ -56,6 +57,8 @@ public class World {
 						// PLAYER
 						Game.player.setX(i * 32);
 						Game.player.setY(j * 32);
+						Game.player.setCollisionBoxPosition(i * 32 + Game.player.collisionXOffset,
+								j * 32 + Game.player.collisionYOffset);
 						break;
 					default:
 						tiles[i + (j * WIDTH)] = new FloorTile(i * 32, j * 32, Tile.TILE_FLOOR);
@@ -221,6 +224,33 @@ public class World {
 				|| tiles[x4 + (y4 * World.WIDTH)] instanceof WallTile);
 	}
 
+	public static boolean isFree(CollisionBox collisionBox) {
+
+		int collisionBoxInitialX = collisionBox.x;
+		int collisionBoxFinalX = collisionBox.x + collisionBox.width;
+		int collisionBoxInitialY = collisionBox.y;
+		int collisionBoxFinalY = collisionBox.y + collisionBox.height;
+
+		int x1 = (collisionBoxInitialX) / TILE_SIZE;
+		int y1 = (collisionBoxInitialY) / TILE_SIZE;
+
+		int x2 = (collisionBoxFinalX - 1) / TILE_SIZE;
+		int y2 = (collisionBoxInitialY) / TILE_SIZE;
+
+		int x3 = (collisionBoxInitialX) / TILE_SIZE;
+		int y3 = (collisionBoxFinalY - 1) / TILE_SIZE;
+
+		int x4 = (collisionBoxFinalX - 1) / TILE_SIZE;
+		int y4 = (collisionBoxFinalY - 1) / TILE_SIZE;
+
+		boolean response = !(tiles[x1 + (y1 * World.WIDTH)] instanceof WallTile
+				|| tiles[x2 + (y2 * World.WIDTH)] instanceof WallTile
+				|| tiles[x3 + (y3 * World.WIDTH)] instanceof WallTile
+				|| tiles[x4 + (y4 * World.WIDTH)] instanceof WallTile);
+
+		return response;
+	}
+
 	public static void revealMap(int x, int y) {
 		int x1 = x / TILE_SIZE;
 		int y1 = y / TILE_SIZE;
@@ -246,8 +276,8 @@ public class World {
 		int xstart = Camera.x >> 5;
 		int ystart = Camera.y >> 5;
 
-		int xfinal = xstart + (Game.WIDTH >> 5) + 10;
-		int yfinal = ystart + (Game.HEIGHT >> 5) + 10;
+		int xfinal = xstart + (Game.getWIDTH() >> 5) + 10;
+		int yfinal = ystart + (Game.getHEIGHT() >> 5) + 10;
 		for (int i = xstart; i < xfinal; i++) {
 			for (int j = ystart; j <= yfinal; j++) {
 				if (i < 0 || j < 0 || i >= WIDTH || j >= HEIGHT) {
