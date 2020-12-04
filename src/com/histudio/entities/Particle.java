@@ -16,11 +16,14 @@ public class Particle extends Entity {
 	public int speed = 4;
 	
 	public double dx = 0, dy = 0;
-
+	
+	public Color color = Color.RED;
+	
 	public Particle(int x, int y, int width, int height, BufferedImage sprite) {
 		super(x, y, width, height, sprite);
 		dx = new Random().nextGaussian();
 		dy = new Random().nextGaussian();
+		this.collisionBox = null;
 	}
 
 	public void tick() {
@@ -33,7 +36,7 @@ public class Particle extends Entity {
 	}
 	
 	public void render(Graphics g) {
-		g.setColor(Color.RED);
+		g.setColor(this.color);
 		g.fillRect(this.getX() - Camera.x, this.getY() - Camera.y, 1, 1);
 	}
 

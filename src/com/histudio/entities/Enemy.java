@@ -24,7 +24,8 @@ public class Enemy extends Entity {
 
 	public int damage = 10, framesToDamage = 15, currentFrameToDamage = 0;
 
-	public int collisionXOffset = 8, collisionYOffset = 0, collisionBoxWidth = 18, collisionBoxHeight = 32;
+	public static int enemyCollisionXOffset = 8, enemyCollisionYOffset = 0, enemyCollisionBoxWidth = 18,
+			enemyCollisionBoxHeight = 32;
 
 	private boolean moved = false;
 	private String direction = "right";
@@ -47,23 +48,29 @@ public class Enemy extends Entity {
 		sprites[2] = Game.spritesheet.getSprite(224, 64, 32, 32);
 		sprites[3] = Game.spritesheet.getSprite(256, 64, 32, 32);
 		feedbackSprite = Game.spritesheet.getSprite(288, 32, 32, 32);
-		this.collisionBox = new CollisionBox(x + collisionXOffset, y + collisionYOffset, collisionBoxWidth,
-				collisionBoxHeight, this);
+		this.setCollisionProps(enemyCollisionXOffset, enemyCollisionYOffset, enemyCollisionBoxWidth,
+				enemyCollisionBoxHeight);
 		// TODO Auto-generated constructor stub
 	}
 
 	public void tick() {
+
+		List<Entity> entitiesToCheck = Game.entitiesQuadTree.query(this.collisionBox.range);
+
+		for (int i = 0; i < entitiesToCheck.size(); i++) {
+			
+			Entity e = entitiesToCheck.get(i);
+			if (!e.equals(this)) {
+				if (this.isColliding(this.collisionBox, e.collisionBox)) {
+					e.onTriggerCollider(this);
+				}
+			}
+		}
+
 		moved = false;
 		if (life <= 0) {
 			Game.entities.remove(this);
 			Game.enemies.remove(this);
-		}
-		if (this.isColliding(this, Game.player)) {
-			currentFrameToDamage++;
-			if (currentFrameToDamage >= framesToDamage) {
-				currentFrameToDamage = 0;
-				Game.player.onTriggerCollider(this);
-			}
 		}
 		double distance = calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY());
 		if (distance < 100) {
@@ -73,6 +80,7 @@ public class Enemy extends Entity {
 		} else {
 			isActive = false;
 		}
+		// FIRST MOVEMENT STYLE:
 //		if(isActive) {		
 //			if ((int) x < Game.player.getX() && World.isFree((int) (x + speed), this.getY())
 //					&& !isCollidingWithEnemy((int) (x + speed), this.getY())) {
@@ -93,12 +101,11 @@ public class Enemy extends Entity {
 //				moved = true;
 //			}
 //		}
-		if (isActive) {
+		if (isActive && Game.world.isFree((Game.player.getX() + 16), (Game.player.getY() + 16))) {
 			Vector2i start = new Vector2i((this.getX() + 16) / 32, (this.getY() + 16) / 32);
 			Vector2i end = new Vector2i((Game.player.getX() + 16) / 32, (Game.player.getY() + 16) / 32);
 			path = AStar.findPath(Game.world, start, end);
 		}
-
 		followPath(path);
 		Game.ui.renderOnMinimap(this.getX() / 32, this.getY() / 32, "enemy");
 		frames++;
@@ -123,7 +130,7 @@ public class Enemy extends Entity {
 //		Game.ui.renderEnemyOnMinimap(this.getX() / 32, this.getY() / 32);
 	}
 
-	public void getHit(int damage) {
+	public void takeDamage(int damage) {
 		Sound.enemyDamaged.play();
 		life = life - damage;
 		this.isDamaged = true;
@@ -135,10 +142,22 @@ public class Enemy extends Entity {
 	public void onTriggerCollider(Object object) {
 		String className = object.getClass().getSimpleName();
 		switch (className) {
-		case "FireballShoot":
-			FireballShoot fireball = (FireballShoot) object;
-			this.getHit(fireball.damage);
-			Game.fireballs.remove(fireball);
+		case "Fireball":
+			Fireball fireball = (Fireball) object;
+			this.takeDamage(fireball.damage);
+			World.generateParticles(200, this.getX(), this.getY());
+			Game.entities.remove(fireball);
+			break;
+		case "Player":
+			Player player = (Player) object;
+			currentFrameToDamage++;
+			if (currentFrameToDamage >= framesToDamage) {
+				currentFrameToDamage = 0;
+				player.takeDamage(this.damage);
+				player.throwBack(this);
+			}
+			break;
+		case "Enemy":
 			break;
 		default:
 			((Entity) object).onTriggerCollider(this);
@@ -147,25 +166,9 @@ public class Enemy extends Entity {
 		}
 	}
 
-	public boolean isCollidingWithEnemy(int xnext, int ynext) {
-		Rectangle currentEnemy = new Rectangle(this.collisionBox);
-		for (int i = 0; i < Game.enemies.size(); i++) {
-			Enemy e = Game.enemies.get(i);
-			if (e == this) {
-				continue;
-			}
-			Rectangle targetEnemy = new Rectangle(e.collisionBox);
-			if (currentEnemy.intersects(targetEnemy)) {
-				return true;
-			}
-		}
-
-		return false;
-
-	}
-
 	public void followPath(List<Node> path) {
 		if (path != null) {
+
 			if (path.size() > 0) {
 
 				CollisionBox nextPositionCollider = this.collisionBox;
@@ -173,8 +176,8 @@ public class Enemy extends Entity {
 				if (x < target.x * 32) {
 					// GOING RIGHT
 					nextPositionCollider = new CollisionBox(this.collisionBox.x + (int) Math.round(speed),
-							this.collisionBox.y, this.collisionBox.width, this.collisionBox.height, this);
-					if (Game.world.isFree(nextPositionCollider) && !isCollidingWithEnemy((int) (x + speed), this.getY())) {
+							this.collisionBox.y, this.collisionBox.width, this.collisionBox.height);
+					if (Game.world.isFree(nextPositionCollider)) {
 						x += speed;
 						moved = true;
 						this.collisionBox = nextPositionCollider;
@@ -188,9 +191,8 @@ public class Enemy extends Entity {
 				} else if (x > target.x * 32) {
 					// GOING LEFT
 					nextPositionCollider = new CollisionBox(this.collisionBox.x - (int) Math.round(speed),
-							this.collisionBox.y, this.collisionBox.width, this.collisionBox.height, this);
-					if (Game.world.isFree(nextPositionCollider)
-							&& !this.isCollidingWithEnemy((int) (x - speed), this.getY())) {
+							this.collisionBox.y, this.collisionBox.width, this.collisionBox.height);
+					if (Game.world.isFree(nextPositionCollider)) {
 						x -= speed;
 						moved = true;
 						this.collisionBox = nextPositionCollider;
@@ -206,8 +208,8 @@ public class Enemy extends Entity {
 					// GOING DOWN
 					nextPositionCollider = new CollisionBox(this.collisionBox.x,
 							this.collisionBox.y + (int) Math.round(speed), this.collisionBox.width,
-							this.collisionBox.height, this);
-					if (Game.world.isFree(nextPositionCollider) && !isCollidingWithEnemy(this.getX(), (int) (y + speed))) {
+							this.collisionBox.height);
+					if (Game.world.isFree(nextPositionCollider)) {
 						y += speed;
 						moved = true;
 						this.collisionBox = nextPositionCollider;
@@ -216,8 +218,8 @@ public class Enemy extends Entity {
 					// GOING UP
 					nextPositionCollider = new CollisionBox(this.collisionBox.x,
 							this.collisionBox.y - (int) Math.round(speed), this.collisionBox.width,
-							this.collisionBox.height, this);
-					if (Game.world.isFree(nextPositionCollider) && !isCollidingWithEnemy(this.getX(), (int) (y - speed))) {
+							this.collisionBox.height);
+					if (Game.world.isFree(nextPositionCollider)) {
 						y -= speed;
 						moved = true;
 						this.collisionBox = nextPositionCollider;
@@ -237,6 +239,7 @@ public class Enemy extends Entity {
 	@Override
 	public void render(Graphics g) {
 		renderCollider(g);
+		renderCollisionRange(g);
 		Graphics2D g2 = (Graphics2D) g;
 		if (!isDamaged) {
 			if (direction == "right") {
@@ -254,7 +257,15 @@ public class Enemy extends Entity {
 			}
 		}
 	}
+	
+	
+	private void renderCollisionRange(Graphics g) {
+		g.setColor(Color.BLUE);
 
+		g.drawRect(this.collisionBox.range.x - Camera.x, this.collisionBox.range.y - Camera.y, this.collisionBox.range.width,
+				this.collisionBox.range.height);
+	}
+	
 	private void renderCollider(Graphics g) {
 		g.setColor(Color.BLUE);
 

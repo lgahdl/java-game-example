@@ -7,13 +7,15 @@ import java.util.stream.Stream;
 
 import com.histudio.entities.Enemy;
 import com.histudio.entities.Entity;
+import com.histudio.entities.Fireball;
+import com.histudio.entities.Particle;
 
 public class QuadTree {
 
 	public Rectangle boundary;
 	private int capacity;
 	private boolean isDivided = false;
-
+	public boolean canSubdivide = true;
 	public List<Entity> entities;
 
 	public QuadTree northwest;
@@ -26,7 +28,7 @@ public class QuadTree {
 		this.capacity = capacity;
 		this.entities = new ArrayList<Entity>();
 	}
-
+	
 	private void subdivide() {
 		int x = this.boundary.x;
 		int y = this.boundary.y;
@@ -40,18 +42,24 @@ public class QuadTree {
 		this.northeast = new QuadTree(northeastBoundary, this.capacity);
 		this.southwest = new QuadTree(southwestBoundary, this.capacity);
 		this.southeast = new QuadTree(southeastBoundary, this.capacity);
+		if(width/2<=32 || height/2 > 32) {
+			this.northwest.canSubdivide = false;
+			this.northeast.canSubdivide = false;
+			this.southwest.canSubdivide = false;
+			this.southeast.canSubdivide = false;
+		}
 	}
 
 	private void addEntityOnSubDivision(Entity entity) {
 
-		if (entity.getX() > (this.boundary.x + this.boundary.width / 2)) {
-			if (entity.getY() > (this.boundary.y + this.boundary.height / 2)) {
+		if (entity.getX() >= (this.boundary.x + this.boundary.width / 2)) {
+			if (entity.getY() >= (this.boundary.y + this.boundary.height / 2)) {
 				this.southeast.insert(entity);
 			} else {
 				this.northeast.insert(entity);
 			}
 		} else {
-			if (entity.getY() > (this.boundary.y + this.boundary.height / 2)) {
+			if (entity.getY() >= (this.boundary.y + this.boundary.height / 2)) {
 				this.southwest.insert(entity);
 			} else {
 				this.northwest.insert(entity);
@@ -60,17 +68,22 @@ public class QuadTree {
 	}
 
 	public void insert(Entity entity) {
-		if (this.entities.size() < this.capacity && !isDivided) {
-			this.entities.add(entity);
-		} else {
-			if (!isDivided) {
-				this.subdivide();
-				for (int i = 0; i < this.entities.size(); i++) {
-					addEntityOnSubDivision(this.entities.get(i));
-				}
-				this.isDivided = true;
+		if (entity.collisionBox != null) {
+			if (this.entities.size() < this.capacity && !isDivided) {
+				this.entities.add(entity);
 			} else {
-				this.addEntityOnSubDivision(entity);
+				if (!isDivided && canSubdivide) {
+					this.subdivide();
+					for (int i = 0; i < this.entities.size(); i++) {
+						addEntityOnSubDivision(this.entities.get(i));
+						this.entities.remove(entities.get(i));
+					}
+					this.isDivided = true;
+				} else if(isDivided) {
+					this.addEntityOnSubDivision(entity);
+				} else {
+					this.entities.add(entity);
+				}
 			}
 		}
 	}

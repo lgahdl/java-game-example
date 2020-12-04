@@ -25,15 +25,15 @@ public class Npc extends Entity {
 	public void tick() {
 		int xPlayer = Game.player.getX();
 		int yPlayer = Game.player.getY();
-		if (Math.abs(xPlayer - this.getX()) < 20 && Math.abs(yPlayer - this.getY()) < 20) {
-			if(!Game.ui.dialogueClosed) {
-				dialogue=true;
-				Game.ui.dialogue=true;				
+		if (this.isColliding(this, Game.player)) {
+			if (!Game.ui.dialogueClosed) {
+				dialogue = true;
+				Game.ui.dialogue = true;
 			}
 		} else {
-			dialogue=false;
-			Game.ui.dialogue=false;
-			Game.ui.dialogueClosed=false;
+			dialogue = false;
+			Game.ui.dialogue = false;
+			Game.ui.dialogueClosed = false;
 		}
 	}
 
@@ -45,4 +45,11 @@ public class Npc extends Entity {
 		}
 	}
 
+	@Override
+	public void onTriggerCollider(Object object) {
+		switch (object.getClass().getSimpleName()) {
+		default:
+			break;
+		}
+	}
 }

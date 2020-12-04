@@ -1,5 +1,6 @@
 package com.histudio.world;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -44,7 +45,7 @@ public class World {
 						Game.entities.add(new Manapack(i * 32, j * 32, 32, 32, Entity.MANAPACK_EN));
 						break;
 					case 0xFF00FFFF: // CIANO
-						Game.entities.add(new Weapon(i * 32, j * 32, 32, 32, Entity.WEAPON_EN, 1));
+						Game.entities.add(new Weapon(i * 32, j * 32, 32, 32, Entity.WEAPON_EN, 0));
 						break;
 					case 0xFF404040: // GRAFITE
 						Game.entities.add(new Sword(i * 32, j * 32, 32, 32, Entity.SWORD_EN, 3));
@@ -131,11 +132,13 @@ public class World {
 				Game.enemies.add(en);
 			}
 			if (i == pathSize / 2) {
-				Game.entities.add(new Weapon(xx * 32, yy * 32, 32, 32, Entity.WEAPON_EN, 3));
+				Game.entities.add(new Weapon(xx * 32, yy * 32, 32, 32, Entity.WEAPON_EN, 1));
 			}
 			if (i == pathSize - 1) {
 				Game.player.setX(xx * 32);
 				Game.player.setY(yy * 32);
+				Game.player.setCollisionBoxPosition(xx * 32 + Game.player.collisionXOffset,
+						yy * 32 + Game.player.collisionYOffset);
 			}
 		}
 
@@ -143,10 +146,19 @@ public class World {
 
 	public static void generateParticles(int amount, int x, int y) {
 		for (int i = 0; i < amount; i++) {
-			Game.entities.add(new Particle(x, y, 1, 1, null));
+			Particle particle = new Particle(x,y,1,1,null);
+			Game.entities.add(particle);
 		}
 	}
-
+	
+	public static void generateParticles(int amount, int x, int y, Color color) {
+		for (int i = 0; i < amount; i++) {
+			Particle particle = new Particle(x,y,1,1,null);
+			particle.color = color;
+			Game.entities.add(particle);
+		}
+	}
+	
 	public boolean isBorder(int xNext, int yNext) {
 		int x1 = xNext / TILE_SIZE;
 		int y1 = yNext / TILE_SIZE;

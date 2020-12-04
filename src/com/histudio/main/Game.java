@@ -35,12 +35,11 @@ import javax.swing.JFrame;
 
 import com.histudio.entities.Enemy;
 import com.histudio.entities.Entity;
-import com.histudio.entities.FireballShoot;
+import com.histudio.entities.Fireball;
 import com.histudio.entities.MeleeAttack;
 import com.histudio.entities.Npc;
 import com.histudio.entities.Player;
 import com.histudio.utils.QuadTree;
-import com.histudio.utils.QuadTreePoint;
 import com.histudio.utils.Spritesheet;
 import com.histudio.world.Camera;
 import com.histudio.world.World;
@@ -70,7 +69,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	public static List<Enemy> enemies;
 
-	public static List<FireballShoot> fireballs;
+	public static List<Fireball> fireballs;
 
 	public static Spritesheet spritesheet;
 
@@ -121,13 +120,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
 		entities = new ArrayList<Entity>();
 		enemies = new ArrayList<Enemy>();
-		fireballs = new ArrayList<FireballShoot>();
+		fireballs = new ArrayList<Fireball>();
 		spritesheet = new Spritesheet("/spritesheet.png");
 		playerSpritesheet = new Spritesheet("/player.png");
 		player = new Player(0, 0, 32, 32, spritesheet.getSprite(64, 0, 32, 32));
 		entities.add(player);
 		world = new World("/map" + curLevel + ".png");
-//		world = new World(32, 32, 2500);
+//		world = new World(100, 100, 25000);
 		ui = new UI();
 		menu = new Menu();
 		npc = new Npc(128, 128, 32, 32, spritesheet.getSprite(64, 0, 32, 32));
@@ -221,7 +220,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public void tick() {
 		if (gameState == "PLAYING") {
 			entitiesQuadTree = new QuadTree(
-					new Rectangle(0, 0, world.WIDTH*32, world.HEIGHT*32), 5);
+					new Rectangle(0, 0, world.WIDTH*32, world.HEIGHT*32), 4);
+			for (int i = 0; i < entities.size(); i++) {
+				Entity e = entities.get(i);
+				entitiesQuadTree.insert(e);
+			}
 			if (player.getLife() <= 0) {
 				gameState = "GAMEOVER";
 			}
@@ -235,14 +238,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 			for (int i = 0; i < entities.size(); i++) {
 				Entity e = entities.get(i);
-				entitiesQuadTree.insert(e);
-			}
-			for (int i = 0; i < entities.size(); i++) {
-				Entity e = entities.get(i);
 				e.tick();
-			}
-			for (int i = 0; i < fireballs.size(); i++) {
-				fireballs.get(i).tick();
 			}
 		} else if (gameState == "GAMEOVER") {
 		}
@@ -254,7 +250,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
 		entities = new ArrayList<Entity>();
 		enemies = new ArrayList<Enemy>();
-		fireballs = new ArrayList<FireballShoot>();
+		fireballs = new ArrayList<Fireball>();
 		spritesheet = new Spritesheet("/spritesheet.png");
 		// player = new Player(0, 0, 32, 32, spritesheet.getSprite(64, 0, 32, 32));
 		entities.add(player);
@@ -353,7 +349,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 
 			if (System.currentTimeMillis() - timer >= 1000) {
-				System.out.println(frames);
+//				System.out.println(frames);
 				frames = 0;
 				timer += 1000;
 			}
@@ -439,14 +435,18 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		if (gameState == "PLAYING") {
 			if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
 				player.right = false;
+				player.speedHorizontal=0;
 			} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
 				player.left = false;
+				player.speedHorizontal=0;
 			}
 
 			if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
 				player.up = false;
+				player.speedVertical=0;
 			} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
 				player.down = false;
+				player.speedVertical=0;
 			}
 			if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
 				player.isRunning = false;

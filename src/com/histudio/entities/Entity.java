@@ -9,7 +9,6 @@ import java.util.List;
 
 import com.histudio.main.Game;
 import com.histudio.utils.CollisionBox;
-import com.histudio.utils.QuadTreePoint;
 import com.histudio.world.Camera;
 import com.histudio.world.Node;
 import com.histudio.world.Vector2i;
@@ -27,20 +26,24 @@ public class Entity {
 	protected int width;
 	protected int height;
 
+	public String lastDirection = "right"; // Options: "right"(DEFAULT), "left", "up", "down"
+
+	public double speedVertical = 0, speedHorizontal = 0, acceleration = 0.1;
+
 	public CollisionBox collisionBox;
-	
-	public QuadTreePoint quadTreePoint;
 
 	protected BufferedImage sprite;
+
+	public int collisionXOffset = 0, collisionYOffset = 0, collisionBoxWidth = 32, collisionBoxHeight = 32;
 
 	public Entity(int x, int y, int width, int height, BufferedImage sprite) {
 		this.x = x;
 		this.y = y;
 		this.width = width;
 		this.height = height;
-		this.collisionBox = new CollisionBox(x, y, width, height);
+		this.collisionBox = new CollisionBox(x + collisionXOffset, y + collisionYOffset, collisionBoxWidth,
+				collisionBoxHeight);
 		this.sprite = sprite;
-		this.quadTreePoint = new QuadTreePoint(this);
 	}
 
 	public Entity(int x, int y, int width, int height, BufferedImage sprite, CollisionBox collisionBox) {
@@ -50,6 +53,14 @@ public class Entity {
 		this.height = height;
 		this.sprite = sprite;
 		this.collisionBox = collisionBox;
+	}
+
+	public void setCollisionProps(int collisionXOffset, int collisionYOffset, int collisionBoxWidth,
+			int collisionBoxHeight) {
+		this.collisionXOffset = collisionXOffset;
+		this.collisionYOffset = collisionYOffset;
+		this.collisionBoxWidth = collisionBoxWidth;
+		this.collisionBoxHeight = collisionBoxHeight;
 	}
 
 	public int getX() {
@@ -111,6 +122,10 @@ public class Entity {
 		return e1.collisionBox.intersects(e2.collisionBox);
 	}
 
+	public boolean isColliding(CollisionBox collisionBox1, CollisionBox collisionBox2) {
+		return collisionBox1.intersects(collisionBox2);
+	}
+
 	public void render(Graphics g) {
 		renderCollisionBox(g);
 		g.drawImage(sprite, this.getX() - Camera.x, this.getY() - Camera.y, null);
@@ -118,12 +133,36 @@ public class Entity {
 
 	private void renderCollisionBox(Graphics g) {
 		g.setColor(Color.BLUE);
-		g.fillRect(this.collisionBox.x - Camera.x, this.collisionBox.y - Camera.y, this.collisionBox.width,
+		g.drawRect(this.collisionBox.x - Camera.x, this.collisionBox.y - Camera.y, this.collisionBox.width,
 				this.collisionBox.height);
 	}
-	
-	public void onTriggerCollider(Object object) {
-		System.out.println("OnTriggerCollider:" + object.getClass().getSimpleName());
+
+	public void applyAcceleration(String direction, double accelerationCur) {
+		switch (direction) {
+		case "right":
+			speedHorizontal += accelerationCur;
+			this.lastDirection = "right";
+			break;
+		case "left":
+			speedHorizontal -= accelerationCur;
+			this.lastDirection = "left";
+			break;
+		case "up":
+			speedVertical -= accelerationCur;
+			this.lastDirection = "up";
+			break;
+		case "down":
+			speedVertical += accelerationCur;
+			this.lastDirection = "down";
+			break;
+		default:
+			break;
+		}
 	}
-	
+
+	public void onTriggerCollider(Object object) {
+		System.out.println("DefaultOnTriggerCollider: This Object:" + this.getClass().getSimpleName());
+		System.out.println("DefaultOnTriggerCollider: Parameter Object:" + object.getClass().getSimpleName());
+	}
+
 }

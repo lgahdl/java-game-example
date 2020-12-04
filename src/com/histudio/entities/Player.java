@@ -3,7 +3,9 @@ package com.histudio.entities;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.util.List;
 
 import com.histudio.main.Game;
 import com.histudio.main.Sound;
@@ -17,9 +19,16 @@ public class Player extends Entity {
 
 	public boolean meleeAttacking = false, isAttacking = false;
 
-	public double speed = 0, normalMaxSpeed = 2, runningMaxSpeed = 3, acceleration = 0.1;
+	public double speedVertical = 0, speedHorizontal = 0, normalMaxSpeed = 2, runningMaxSpeed = 3, acceleration = 0.1;
+
+	public int throwBackFrames = 0, throwBackMaxFrames = 20, throwBackAcceleration = 0;
+
+	public double sourceXPot = 0, sourceYPot = 0;
+
+	public boolean isThrowed = false;
 
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 7;
+
 	private boolean moved = false;
 	private boolean damaged = false;
 
@@ -33,9 +42,9 @@ public class Player extends Entity {
 
 	public BufferedImage[] playerDamaged;
 
-	private double life = 70, maxLife = 100;
+	private double life = 100, maxLife = 100;
 
-	private double mana = 70, maxMana = 100;
+	private double mana = 100, maxMana = 100;
 
 	private int damageFrames = 0, maxDamageFrames = 20;
 
@@ -57,7 +66,8 @@ public class Player extends Entity {
 
 	public int mx, my;
 
-	public int collisionXOffset = 6, collisionYOffset = 12, collisionBoxWidth = 18, collisionBoxHeight = 16;
+	public static int playerCollisionXOffset = 6, playerCollisionYOffset = 12, playerCollisionBoxWidth = 18,
+			playerCollisionBoxHeight = 16;
 
 	public Player(int x, int y, int width, int height, BufferedImage sprite) {
 		super(x, y, width, height, sprite);
@@ -66,6 +76,8 @@ public class Player extends Entity {
 		rightPlayer = new BufferedImage[8];
 		upPlayer = new BufferedImage[8];
 		playerDamaged = new BufferedImage[8];
+		this.setCollisionProps(playerCollisionXOffset, playerCollisionYOffset, playerCollisionBoxWidth,
+				playerCollisionBoxHeight);
 		for (int i = 0; i < 8; i++) {
 			frontPlayer[i] = Game.playerSpritesheet.getSprite(32 * i, 0, 32, 32);
 			rightPlayer[i] = Game.playerSpritesheet.getSprite(32 * i, 32, 32, 32);
@@ -73,8 +85,9 @@ public class Player extends Entity {
 			upPlayer[i] = Game.playerSpritesheet.getSprite(32 * i, 96, 32, 32);
 			playerDamaged[i] = Game.playerSpritesheet.getSprite(0, 0, 32, 32);
 		}
+
 		this.collisionBox = new CollisionBox(x + collisionXOffset, y + collisionYOffset, collisionBoxWidth,
-				collisionBoxHeight, this);
+				collisionBoxHeight);
 	}
 
 	public double getLife() {
@@ -194,29 +207,57 @@ public class Player extends Entity {
 		Sound.playerDamaged.play();
 	}
 
-	private void throwBack(Enemy enemy) {
-		CollisionBox nextPositionCollider = this.collisionBox;
-		if (enemy.getX() > this.getX()) {
-			nextPositionCollider = new CollisionBox(this.collisionBox.x - (int) speed, this.collisionBox.y,
-					this.collisionBox.width, this.collisionBox.height, this);
-			if (Game.world.isFree(nextPositionCollider)
-					|| (!Game.world.isBorder(this.getX() + (int) speed, this.getY()) && this.getIsJumping())) {
-				moved = true;
-				this.setX((int) (x - speed));
-				this.collisionBox = nextPositionCollider;
-			}
-		}
+	public void throwBack(Enemy enemy) {
+		this.isThrowed = true;
+		double playerCenterX = this.collisionBox.x + this.collisionBox.width / 2;
+		double playerCenterY = this.collisionBox.y + this.collisionBox.height / 2;
+		double enemyCenterX = enemy.collisionBox.x + enemy.collisionBox.width / 2;
+		double enemyCenterY = enemy.collisionBox.y + enemy.collisionBox.height / 2;
+
+		double relativeDistX = 10 * Math.abs(playerCenterX - enemyCenterX)
+				/ (enemy.collisionBox.width / 2 + this.collisionBox.width / 2);
+		double relativeDistY = 10 * Math.abs(playerCenterY - enemyCenterY)
+				/ (enemy.collisionBox.height / 2 + this.collisionBox.height / 2);
+
+		String horizontal = playerCenterX - enemyCenterX > 0 ? "right" : "left";
+		String vertical = playerCenterY - enemyCenterY > 0 ? "down" : "up";
+
+		sourceXPot = relativeDistX;
+		sourceYPot = relativeDistY;
+
+		applyAcceleration(horizontal, acceleration * relativeDistX);
+		applyAcceleration(vertical, acceleration * relativeDistY);
+
+		System.out.println(sourceXPot);
+		System.out.println(sourceYPot);
+
 	}
 
 	@Override
 	public void onTriggerCollider(Object object) {
-//		System.out.println(object.getClass().getSimpleName());
 		String className = object.getClass().getSimpleName();
 		switch (className) {
+		case "Player":
+			Player player = (Player) object;
+			if (player.equals(this)) {
+				System.out.println("ERROR: Colliding with itself");
+			}
+			break;
+		case "Fireball":
+			Fireball fireball = (Fireball) object;
+			if (fireball.player.equals(this)) {
+				break;
+			} else {
+				this.takeDamage(fireball.damage);
+			}
 		case "Enemy":
 			Enemy enemy = (Enemy) object;
-			this.takeDamage(enemy.damage);
-			this.throwBack(enemy);
+			enemy.currentFrameToDamage++;
+			if (enemy.currentFrameToDamage >= enemy.framesToDamage) {
+				enemy.currentFrameToDamage = 0;
+				this.takeDamage(enemy.damage);
+				this.throwBack(enemy);
+			}
 			break;
 		default:
 			((Entity) object).onTriggerCollider(this);
@@ -229,100 +270,81 @@ public class Player extends Entity {
 	@Override
 	public void tick() {
 
+		List<Entity> entitiesToCheck = Game.entitiesQuadTree.query(this.collisionBox.range);
+
 		moved = false;
-		double maxSpeed = isRunning ? runningMaxSpeed : normalMaxSpeed;
-//		if (jump) {
-//			if (this.getIsJumping() == false) {
-//				this.setJump(false);
-//				this.setIsJumping(true);
-//			}
-//		}
-//
-//		if (this.isJumping == true) {
-//			if (zTop == false) {
-//				jumpCur += jumpSpeed;
-//			} else if (zTop == true) {
-//				jumpCur -= jumpSpeed;
-//			}
-//			z = jumpCur;
-//			if (jumpFrames <= jumpCur) {
-//				zTop = true;
-//			}
-//			if (z <= 0 && zTop == true) {
-//				zTop = false;
-//				isJumping = false;
-//			}
-//		}
-		CollisionBox nextPositionCollider = this.collisionBox;
+		if (jump) {
+			if (this.getIsJumping() == false) {
+				this.setJump(false);
+				this.setIsJumping(true);
+			}
+		}
+
+		if (this.isJumping == true) {
+			if (zTop == false) {
+				jumpCur += jumpSpeed;
+			} else if (zTop == true) {
+				jumpCur -= jumpSpeed;
+			}
+			z = jumpCur;
+			if (jumpFrames <= jumpCur) {
+				zTop = true;
+			}
+			if (z <= 0 && zTop == true) {
+				zTop = false;
+				isJumping = false;
+			}
+		}
 		if (!meleeAttacking) {
 
 			if (right) {
-				if (this.lastPressedMovementKey == "left") {
-					speed = 0;
-				}
-				this.lastPressedMovementKey = "right";
-				isRight = true;
-				nextPositionCollider = new CollisionBox((int) Math.round(this.collisionBox.x + speed),
-						this.collisionBox.y, this.collisionBox.width, this.collisionBox.height, this);
-				if (Game.world.isFree(nextPositionCollider)
-						|| (!Game.world.isBorder(this.getX() + (int) (speed), this.getY()) && this.getIsJumping())) {
-					moved = true;
-					this.setX((int) Math.round(x + speed));
-					this.collisionBox = nextPositionCollider;
-				}
+				applyAcceleration("right", acceleration);
 			} else if (left) {
-				if (this.lastPressedMovementKey == "right") {
-					speed = 0;
-				}
-				this.lastPressedMovementKey = "left";
-				isRight = false;
-				nextPositionCollider = new CollisionBox((int) Math.round(this.collisionBox.x - speed),
-						this.collisionBox.y, this.collisionBox.width, this.collisionBox.height, this);
-				if (Game.world.isFree(nextPositionCollider)
-						|| (!Game.world.isBorder(this.getX() - (int) (speed), this.getY()) && this.getIsJumping())) {
-					moved = true;
-					this.setX((int) Math.round((x - speed)));
-					this.collisionBox = nextPositionCollider;
-				}
+				applyAcceleration("left", acceleration);
 			}
 			if (up) {
-				if (this.lastPressedMovementKey == "down") {
-					speed = 0;
-				}
-				this.lastPressedMovementKey = "up";
-				isUp = true;
-				nextPositionCollider = new CollisionBox(this.collisionBox.x,
-						(int) Math.round(this.collisionBox.y - speed), this.collisionBox.width,
-						this.collisionBox.height, this);
-				if (Game.world.isFree(nextPositionCollider)
-						|| (!Game.world.isBorder(this.getX(), this.getY() - (int) (speed)) && this.getIsJumping())) {
-					moved = true;
-					this.setY((int) Math.round(y - speed));
-					this.collisionBox = nextPositionCollider;
-				}
+				applyAcceleration("up", acceleration);
 			} else if (down) {
-				if (this.lastPressedMovementKey == "up") {
-					speed = 0;
-				}
-				this.lastPressedMovementKey = "down";
-				isUp = false;
-				nextPositionCollider = new CollisionBox(this.collisionBox.x,
-						(int) Math.round(this.collisionBox.y + speed), this.collisionBox.width,
-						this.collisionBox.height, this);
-				if (Game.world.isFree(nextPositionCollider)
-						|| (!Game.world.isBorder(this.getX(), this.getY() + (int) (speed)) && this.getIsJumping())) {
-					moved = true;
-					this.setY((int) Math.round(y + speed));
-					this.collisionBox = nextPositionCollider;
+				applyAcceleration("down", acceleration);
+			}
+			CollisionBox nextPositionCollider = new CollisionBox(
+					(int) Math.round(this.collisionBox.x + speedHorizontal),
+					(int) Math.round(this.collisionBox.y + speedVertical), this.collisionBox.width,
+					this.collisionBox.height);
+			CollisionBox nextPositionColliderX = new CollisionBox(
+					(int) Math.round(this.collisionBox.x + speedHorizontal), this.collisionBox.y,
+					this.collisionBox.width, this.collisionBox.height);
+			CollisionBox nextPositionColliderY = new CollisionBox(this.collisionBox.x,
+					(int) Math.round(this.collisionBox.y + speedVertical), this.collisionBox.width,
+					this.collisionBox.height);
+			for (int i = 0; i < entitiesToCheck.size(); i++) {
+				Entity currentEntity = entitiesToCheck.get(i);
+				if (this.isColliding(this.collisionBox, currentEntity.collisionBox) && !currentEntity.equals(this)) {
+					currentEntity.onTriggerCollider(this);
+
+					if (currentEntity.collisionBox.solid
+							&& this.isColliding(nextPositionColliderX, currentEntity.collisionBox)) {
+						nextPositionColliderX = this.collisionBox;
+						nextPositionCollider = nextPositionColliderY;
+						speedHorizontal = 0;
+					}
+					if (currentEntity.collisionBox.solid
+							&& this.isColliding(nextPositionColliderY, currentEntity.collisionBox)) {
+						nextPositionColliderY = this.collisionBox;
+						nextPositionCollider = nextPositionColliderX;
+						speedVertical = 0;
+					}
 				}
 			}
-
+			if (Game.world.isFree(nextPositionCollider)
+					|| (!Game.world.isBorder((int) Math.round(x + speedHorizontal), (int) Math.round(y + speedVertical))
+							&& this.getIsJumping())) {
+				moved = true;
+				this.setX((int) Math.round(x + speedHorizontal));
+				this.setY((int) Math.round(y + speedVertical));
+				this.collisionBox = nextPositionCollider;
+			}
 			if (moved) {
-				if (speed < maxSpeed) {
-					speed += acceleration;
-				} else if (speed > maxSpeed) {
-					speed -= acceleration;
-				}
 				Game.world.revealMap(this.getX(), this.getY());
 				frames++;
 				if (frames >= maxFrames) {
@@ -333,8 +355,9 @@ public class Player extends Entity {
 					}
 				}
 			} else if (!moved) {
+				speedVertical = 0;
+				speedHorizontal = 0;
 				index = 0;
-				speed = 0;
 			}
 		}
 
@@ -357,11 +380,15 @@ public class Player extends Entity {
 			}
 		}
 
+		if (isThrowed) {
+
+		}
+
 		if (shoot) {
 			shoot = false;
 			this.mana -= 2;
-			double dx = this.lastPressedMovementKey == "right" ? 1 : this.lastPressedMovementKey == "left" ? -1 : 0;
-			double dy = this.lastPressedMovementKey == "up" ? -1 : this.lastPressedMovementKey == "down" ? 1 : 0;
+			double dx = this.lastPressedMovementKey == "right" ? 0.2 : this.lastPressedMovementKey == "left" ? -0.2 : 0;
+			double dy = this.lastPressedMovementKey == "up" ? -0.2 : this.lastPressedMovementKey == "down" ? 0.2 : 0;
 
 			if (right && !left) {
 				dx = 1;
@@ -381,9 +408,10 @@ public class Player extends Entity {
 			}
 			int px = 12;
 			int py = 12;
-			FireballShoot fireball = new FireballShoot(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy,
-					this.weapon.damage);
-			Game.fireballs.add(fireball);
+			Fireball fireball = new Fireball(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy,
+					this.weapon.damage, this);
+			Game.entities.add(fireball);
+			Game.entities.add(fireball);
 		}
 		if (mouseShoot) {
 			mouseShoot = false;
@@ -393,15 +421,60 @@ public class Player extends Entity {
 			double dy = Math.sin(angle);
 			int px = 12;
 			int py = 12;
-			FireballShoot fireball = new FireballShoot(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy,
-					this.weapon.damage);
-			Game.fireballs.add(fireball);
+			Fireball fireball = new Fireball(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy,
+					this.weapon.damage, this);
+			Game.entities.add(fireball);
 		}
 
 		Game.ui.renderOnMinimap(this.getX() / 32, this.getY() / 32, "player");
 
 		setCamera();
 
+	}
+
+	@Override
+	public void applyAcceleration(String direction, double accelerationCur) {
+		double maxSpeed = isRunning ? runningMaxSpeed : normalMaxSpeed;
+		switch (direction) {
+		case "right":
+			if (this.lastPressedMovementKey == "left") {
+				speedHorizontal = -0.2;
+			}
+			if (Math.abs(speedHorizontal) < maxSpeed) {
+				speedHorizontal += accelerationCur;
+			}
+			this.lastPressedMovementKey = "right";
+			break;
+		case "left":
+			if (this.lastPressedMovementKey == "right") {
+				speedHorizontal = 0.2;
+			}
+			if (Math.abs(speedHorizontal) < maxSpeed) {
+				speedHorizontal -= accelerationCur;
+			}
+			this.lastPressedMovementKey = "left";
+			break;
+		case "up":
+			if (this.lastPressedMovementKey == "down") {
+				speedVertical = -0.2;
+			}
+			if (Math.abs(speedVertical) < maxSpeed) {
+				speedVertical -= accelerationCur;
+			}
+			this.lastPressedMovementKey = "up";
+			break;
+		case "down":
+			if (this.lastPressedMovementKey == "up") {
+				speedHorizontal = 0.2;
+			}
+			if (Math.abs(speedVertical) < maxSpeed) {
+				speedVertical += accelerationCur;
+			}
+			this.lastPressedMovementKey = "down";
+			break;
+		default:
+			break;
+		}
 	}
 
 	public void setCamera() {
@@ -463,7 +536,7 @@ public class Player extends Entity {
 			meleeAttack.render(g);
 		}
 		renderCollisionBox(g);
-
+		renderRangeBox(g);
 	}
 
 	private void renderCollisionBox(Graphics g) {
@@ -471,4 +544,10 @@ public class Player extends Entity {
 		g.drawRect(this.collisionBox.x - Camera.x, this.collisionBox.y - Camera.y, this.collisionBox.width,
 				this.collisionBox.height);
 	}
+
+	private void renderRangeBox(Graphics g) {
+		g.drawRect(this.collisionBox.range.x - Camera.x, this.collisionBox.range.y - Camera.y,
+				this.collisionBox.range.width, this.collisionBox.range.height);
+	}
+
 }
