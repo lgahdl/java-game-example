@@ -12,6 +12,7 @@ import com.histudio.utils.CollisionBox;
 import com.histudio.world.Camera;
 import com.histudio.world.Node;
 import com.histudio.world.Vector2i;
+import com.histudio.world.World;
 
 public class Entity {
 
@@ -43,6 +44,7 @@ public class Entity {
 		this.height = height;
 		this.collisionBox = new CollisionBox(x + collisionXOffset, y + collisionYOffset, collisionBoxWidth,
 				collisionBoxHeight);
+		this.collisionBox.solid = true;
 		this.sprite = sprite;
 	}
 
@@ -131,12 +133,18 @@ public class Entity {
 		g.drawImage(sprite, this.getX() - Camera.x, this.getY() - Camera.y, null);
 	}
 
-	private void renderCollisionBox(Graphics g) {
-		g.setColor(Color.BLUE);
+	public void renderCollisionBox(Graphics g) {
+		g.setColor(Color.GREEN);
 		g.drawRect(this.collisionBox.x - Camera.x, this.collisionBox.y - Camera.y, this.collisionBox.width,
 				this.collisionBox.height);
 	}
-
+	
+	public void renderRangeBox(Graphics g) {
+		g.setColor(Color.BLUE);
+		g.drawRect(this.collisionBox.range.x - Camera.x, this.collisionBox.range.y - Camera.y,
+				this.collisionBox.range.width, this.collisionBox.range.height);
+	}
+	
 	public void applyAcceleration(String direction, double accelerationCur) {
 		switch (direction) {
 		case "right":
@@ -161,8 +169,13 @@ public class Entity {
 	}
 
 	public void onTriggerCollider(Object object) {
-		System.out.println("DefaultOnTriggerCollider: This Object:" + this.getClass().getSimpleName());
-		System.out.println("DefaultOnTriggerCollider: Parameter Object:" + object.getClass().getSimpleName());
+		String className = object.getClass().getSimpleName();
+		switch (className) {
+		default:
+			((Entity) object).onTriggerCollider(this);
+			System.out.println("Default Trigger, redirecting to:" + className);
+			break;
+		}
 	}
-
+	
 }

@@ -46,13 +46,13 @@ public class Player extends Entity {
 
 	private double mana = 100, maxMana = 100;
 
-	private int damageFrames = 0, maxDamageFrames = 20;
+	private int attackFrames = 0, maxAttackFrames = 60;
 
 	private Weapon weapon;
 
 	private Sword sword;
 
-	private MeleeAttack meleeAttack = null;
+	public MeleeAttack meleeAttack = null;
 
 	private String lastPressedMovementKey = "right";
 
@@ -198,7 +198,9 @@ public class Player extends Entity {
 	}
 
 	public void swordAttack() {
-		this.meleeAttacking = true;
+		if (this.meleeAttack == null) {
+			this.meleeAttacking = true;
+		}
 	}
 
 	public void takeDamage(int damage) {
@@ -259,6 +261,9 @@ public class Player extends Entity {
 				this.throwBack(enemy);
 			}
 			break;
+		case "Weapon":
+			System.out.println("Player Trigger for: Weapon");
+			break;
 		default:
 			((Entity) object).onTriggerCollider(this);
 			System.out.println("Player Trigger not implemented for:" + className);
@@ -295,7 +300,7 @@ public class Player extends Entity {
 				isJumping = false;
 			}
 		}
-		if (!meleeAttacking) {
+		if (this.meleeAttack == null) {
 
 			if (right) {
 				applyAcceleration("right", acceleration);
@@ -319,22 +324,28 @@ public class Player extends Entity {
 					this.collisionBox.height);
 			for (int i = 0; i < entitiesToCheck.size(); i++) {
 				Entity currentEntity = entitiesToCheck.get(i);
-				if (this.isColliding(this.collisionBox, currentEntity.collisionBox) && !currentEntity.equals(this)) {
-					currentEntity.onTriggerCollider(this);
-
-					if (currentEntity.collisionBox.solid
-							&& this.isColliding(nextPositionColliderX, currentEntity.collisionBox)) {
-						nextPositionColliderX = this.collisionBox;
-						nextPositionCollider = nextPositionColliderY;
-						speedHorizontal = 0;
-					}
-					if (currentEntity.collisionBox.solid
-							&& this.isColliding(nextPositionColliderY, currentEntity.collisionBox)) {
-						nextPositionColliderY = this.collisionBox;
-						nextPositionCollider = nextPositionColliderX;
-						speedVertical = 0;
-					}
+				if (currentEntity.collisionBox.solid
+						&& this.isColliding(nextPositionColliderX, currentEntity.collisionBox)) {
+					System.out.println("here1");
+					nextPositionColliderX = this.collisionBox;
+					nextPositionCollider = nextPositionColliderY;
+					speedHorizontal = 0;
 				}
+				
+				if (currentEntity.collisionBox.solid
+						&& this.isColliding(nextPositionColliderY, currentEntity.collisionBox)) {
+					System.out.println("here2");
+					nextPositionColliderY = this.collisionBox;
+					nextPositionCollider = nextPositionColliderX;
+					speedVertical = 0;
+				}
+				
+				if (this.isColliding(this.collisionBox, currentEntity.collisionBox) && !currentEntity.equals(this)) {
+					System.out.println("here3");
+					currentEntity.onTriggerCollider(this);
+				}
+				
+				
 			}
 			if (Game.world.isFree(nextPositionCollider)
 					|| (!Game.world.isBorder((int) Math.round(x + speedHorizontal), (int) Math.round(y + speedVertical))
@@ -361,30 +372,25 @@ public class Player extends Entity {
 			}
 		}
 
-		if (meleeAttacking) {
+		if (meleeAttacking && this.meleeAttack == null) {
 			shoot = false;
-			this.meleeAttack = new MeleeAttack(this.getX(), this.getY(), 1, 1, null, this.sword.damage,
+			MeleeAttack meleeAttack = new MeleeAttack(this.getX(), this.getY(), 32, 32, null, this.sword.damage,
 					this.lastPressedMovementKey, this);
+			this.meleeAttack = meleeAttack;
+			Game.entities.add(meleeAttack);
+			meleeAttacking = false;
 		}
 
-		if (meleeAttack != null) {
-			meleeAttack.tick();
-		}
-
-		if (damaged) {
-			isAttacking = false;
-			this.damageFrames++;
-			if (this.damageFrames == maxDamageFrames) {
-				this.damageFrames = 0;
-				damaged = false;
-			}
+		if (this.meleeAttack != null && this.meleeAttack.finished) {
+			Game.entities.remove(this.meleeAttack);
+			this.meleeAttack = null;
 		}
 
 		if (isThrowed) {
 
 		}
 
-		if (shoot) {
+		if (shoot && this.meleeAttack == null) {
 			shoot = false;
 			this.mana -= 2;
 			double dx = this.lastPressedMovementKey == "right" ? 0.2 : this.lastPressedMovementKey == "left" ? -0.2 : 0;
@@ -408,12 +414,12 @@ public class Player extends Entity {
 			}
 			int px = 12;
 			int py = 12;
-			Fireball fireball = new Fireball(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy,
-					this.weapon.damage, this);
+			Fireball fireball = new Fireball(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy, this.weapon.damage,
+					this);
 			Game.entities.add(fireball);
 			Game.entities.add(fireball);
 		}
-		if (mouseShoot) {
+		if (mouseShoot && this.meleeAttack == null) {
 			mouseShoot = false;
 			double angle = Math.atan2(this.my - (this.getY() + 16 - Camera.y), this.mx - (this.getX() + 16 - Camera.x));
 			this.mana -= 2;
@@ -421,8 +427,8 @@ public class Player extends Entity {
 			double dy = Math.sin(angle);
 			int px = 12;
 			int py = 12;
-			Fireball fireball = new Fireball(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy,
-					this.weapon.damage, this);
+			Fireball fireball = new Fireball(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy, this.weapon.damage,
+					this);
 			Game.entities.add(fireball);
 		}
 
@@ -442,6 +448,8 @@ public class Player extends Entity {
 			}
 			if (Math.abs(speedHorizontal) < maxSpeed) {
 				speedHorizontal += accelerationCur;
+			} else {
+				speedHorizontal -= accelerationCur;
 			}
 			this.lastPressedMovementKey = "right";
 			break;
@@ -451,7 +459,10 @@ public class Player extends Entity {
 			}
 			if (Math.abs(speedHorizontal) < maxSpeed) {
 				speedHorizontal -= accelerationCur;
+			} else {
+				speedHorizontal += accelerationCur;
 			}
+
 			this.lastPressedMovementKey = "left";
 			break;
 		case "up":
@@ -460,6 +471,8 @@ public class Player extends Entity {
 			}
 			if (Math.abs(speedVertical) < maxSpeed) {
 				speedVertical -= accelerationCur;
+			} else {
+				speedVertical += accelerationCur;
 			}
 			this.lastPressedMovementKey = "up";
 			break;
@@ -469,6 +482,8 @@ public class Player extends Entity {
 			}
 			if (Math.abs(speedVertical) < maxSpeed) {
 				speedVertical += accelerationCur;
+			} else {
+				speedVertical -= accelerationCur;
 			}
 			this.lastPressedMovementKey = "down";
 			break;
@@ -537,17 +552,6 @@ public class Player extends Entity {
 		}
 		renderCollisionBox(g);
 		renderRangeBox(g);
-	}
-
-	private void renderCollisionBox(Graphics g) {
-		g.setColor(Color.RED);
-		g.drawRect(this.collisionBox.x - Camera.x, this.collisionBox.y - Camera.y, this.collisionBox.width,
-				this.collisionBox.height);
-	}
-
-	private void renderRangeBox(Graphics g) {
-		g.drawRect(this.collisionBox.range.x - Camera.x, this.collisionBox.range.y - Camera.y,
-				this.collisionBox.range.width, this.collisionBox.range.height);
 	}
 
 }

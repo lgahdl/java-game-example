@@ -3,6 +3,7 @@ package com.histudio.entities;
 import java.awt.image.BufferedImage;
 
 import com.histudio.main.Game;
+import com.histudio.world.World;
 
 public class Weapon extends Entity {
 	
@@ -36,10 +37,20 @@ public class Weapon extends Entity {
 	@Override
 	public void tick() {
 		Game.ui.renderOnMinimap(this.getX()/32, this.getY()/32, "weapon");
-		if(this.isColliding(this, Game.player)) {
+	}
+	
+	public void onTriggerCollider(Object object) {
+		String className = object.getClass().getSimpleName();
+		switch (className) {
+		case "Player":
 			Game.player.setWeapon(this);
 			this.equipped = true;
 			Game.entities.remove(this);
+			break;
+		default:
+			((Entity) object).onTriggerCollider(this);
+			System.out.println("Weapon Trigger not configured for:" + className);
+			break;
 		}
 	}
 	

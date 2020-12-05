@@ -220,7 +220,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public void tick() {
 		if (gameState == "PLAYING") {
 			entitiesQuadTree = new QuadTree(
-					new Rectangle(0, 0, world.WIDTH*32, world.HEIGHT*32), 4);
+					new Rectangle(0, 0, world.WIDTH*32, world.HEIGHT*32), 10);
 			for (int i = 0; i < entities.size(); i++) {
 				Entity e = entities.get(i);
 				entitiesQuadTree.insert(e);
@@ -249,6 +249,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		gameState = "WAIT";
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
 		entities = new ArrayList<Entity>();
+		player.meleeAttack=null;
 		enemies = new ArrayList<Enemy>();
 		fireballs = new ArrayList<Fireball>();
 		spritesheet = new Spritesheet("/spritesheet.png");

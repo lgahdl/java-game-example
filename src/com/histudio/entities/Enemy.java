@@ -159,6 +159,13 @@ public class Enemy extends Entity {
 			break;
 		case "Enemy":
 			break;
+		case "MeleeAttack":
+			System.out.println("here");
+			MeleeAttack meleeAttack = (MeleeAttack) object;
+			if(!meleeAttack.father.equals(this)) {
+				this.takeDamage(meleeAttack.damage);			
+			}
+			break;
 		default:
 			((Entity) object).onTriggerCollider(this);
 			System.out.println("Enemy Trigger not configured for:" + className);
@@ -238,8 +245,8 @@ public class Enemy extends Entity {
 
 	@Override
 	public void render(Graphics g) {
-		renderCollider(g);
-		renderCollisionRange(g);
+		renderCollisionBox(g);
+		renderRangeBox(g);
 		Graphics2D g2 = (Graphics2D) g;
 		if (!isDamaged) {
 			if (direction == "right") {
@@ -258,19 +265,5 @@ public class Enemy extends Entity {
 		}
 	}
 	
-	
-	private void renderCollisionRange(Graphics g) {
-		g.setColor(Color.BLUE);
-
-		g.drawRect(this.collisionBox.range.x - Camera.x, this.collisionBox.range.y - Camera.y, this.collisionBox.range.width,
-				this.collisionBox.range.height);
-	}
-	
-	private void renderCollider(Graphics g) {
-		g.setColor(Color.BLUE);
-
-		g.drawRect(this.collisionBox.x - Camera.x, this.collisionBox.y - Camera.y, this.collisionBox.width,
-				this.collisionBox.height);
-	}
 
 }

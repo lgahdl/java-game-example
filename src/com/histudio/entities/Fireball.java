@@ -78,18 +78,6 @@ public class Fireball extends Entity {
 		Game.ui.renderOnMinimap(this.getX() / 32, this.getY() / 32, "player");
 	}
 
-	private void renderRangeBox(Graphics g) {
-		g.setColor(Color.PINK);
-		g.drawRect(this.collisionBox.range.x - Camera.x, this.collisionBox.range.y - Camera.y,
-				this.collisionBox.range.width, this.collisionBox.range.height);
-	}
-
-	private void renderCollisionBox(Graphics g) {
-		g.setColor(Color.GREEN);
-		g.drawRect(this.collisionBox.x - Camera.x, this.collisionBox.y - Camera.y, this.collisionBox.width,
-				this.collisionBox.height);
-	}
-
 	@Override
 	public void onTriggerCollider(Object object) {
 		String className = object.getClass().getSimpleName();
