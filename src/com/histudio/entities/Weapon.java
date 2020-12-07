@@ -48,8 +48,6 @@ public class Weapon extends Entity {
 			Game.entities.remove(this);
 			break;
 		default:
-			((Entity) object).onTriggerCollider(this);
-			System.out.println("Weapon Trigger not configured for:" + className);
 			break;
 		}
 	}

@@ -1,5 +1,7 @@
 package com.histudio.utils;
 
+import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +11,7 @@ import com.histudio.entities.Enemy;
 import com.histudio.entities.Entity;
 import com.histudio.entities.Fireball;
 import com.histudio.entities.Particle;
+import com.histudio.world.Camera;
 
 public class QuadTree {
 
@@ -42,6 +45,7 @@ public class QuadTree {
 		this.northeast = new QuadTree(northeastBoundary, this.capacity);
 		this.southwest = new QuadTree(southwestBoundary, this.capacity);
 		this.southeast = new QuadTree(southeastBoundary, this.capacity);
+		this.isDivided = true;
 		if (width / 2 == 32) {
 			this.northwest.canSubdivide = false;
 			this.northeast.canSubdivide = false;
@@ -52,16 +56,19 @@ public class QuadTree {
 
 	private void addEntityOnSubDivision(Entity entity) {
 
-		if (entity.getX() > (this.boundary.x + this.boundary.width / 2)) {
-			if (entity.getY() > (this.boundary.y + this.boundary.height / 2)) {
+		if (entity.getX()+16 > (this.boundary.x + this.boundary.width / 2)) {
+			if (entity.getY()+16 > (this.boundary.y + this.boundary.height / 2)) {
 				this.southeast.insert(entity);
 			} else {
+
 				this.northeast.insert(entity);
 			}
 		} else {
-			if (entity.getY() > (this.boundary.y + this.boundary.height / 2)) {
+			if (entity.getY()+16 > (this.boundary.y + this.boundary.height / 2)) {
+
 				this.southwest.insert(entity);
 			} else {
+
 				this.northwest.insert(entity);
 			}
 		}
@@ -70,22 +77,15 @@ public class QuadTree {
 	public void insert(Entity entity) {
 		if (entity.collisionBox != null) {
 			if (!isDivided) {
-				if (this.entities.size() <= this.capacity || !canSubdivide) {
-//					if (entity.getClass().getSimpleName().equals("Weapon") ||entity.getClass().getSimpleName().equals("Player") ) {
-//						System.out.println("Class:" + entity.getClass().getSimpleName() + "; (X,Y): (" + entity.getX()
-//								+ "," + entity.getY() + ")");
-//						System.out.println("Boundary (X,Y): (" + this.boundary.x + "," + this.boundary.y + ")");
-//						System.out.println("Boundary (W,H): (" + this.boundary.width + "," + this.boundary.height + ")");
-//					}
-					
+				if (this.entities.size() < this.capacity || !canSubdivide) {
 					this.entities.add(entity);
 				} else if (canSubdivide) {
 					this.subdivide();
 					for (int i = 0; i < this.entities.size(); i++) {
-						addEntityOnSubDivision(this.entities.get(i));
-						this.entities.remove(this.entities.get(i));
+						Entity e = this.entities.get(i);
+						addEntityOnSubDivision(e);
 					}
-					this.isDivided = true;
+					this.entities = null;
 					this.addEntityOnSubDivision(entity);
 				}
 			} else {
@@ -113,14 +113,10 @@ public class QuadTree {
 				int rangeFinalX = range.x + range.width;
 				int rangeInitialY = range.y;
 				int rangeFinalY = range.y + range.height;
-//				System.out.println("This (Xo,Yo): (" + rangeInitialX + "," + rangeInitialY + ")");
-//				System.out.println("This (Xf,Yf): (" + rangeFinalX + "," + rangeFinalY + ")");
 				for (int i = 0; i < this.entities.size(); i++) {
 					Entity currentEntity = this.entities.get(i);
 					if (currentEntity.getX() >= rangeInitialX && currentEntity.getX() <= rangeFinalX) {
 						if (currentEntity.getY() >= rangeInitialY && currentEntity.getY() <= rangeFinalY) {
-//							System.out.println("Class:" + currentEntity.getClass().getSimpleName() + "/ (X,Y): ("
-//									+ currentEntity.getX() + "," + currentEntity.getY() + ")");
 							found.add(currentEntity);
 						}
 					}
@@ -129,4 +125,16 @@ public class QuadTree {
 		}
 		return found;
 	}
+
+	public void render(Graphics g) {
+		g.setColor(Color.PINK);
+		g.drawRect(this.boundary.x - Camera.x, this.boundary.y - Camera.y, this.boundary.width, this.boundary.height);
+		if (this.isDivided) {
+			this.southeast.render(g);
+			this.northeast.render(g);
+			this.southwest.render(g);
+			this.northwest.render(g);
+		}
+	}
+
 }

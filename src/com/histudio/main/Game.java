@@ -220,7 +220,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public void tick() {
 		if (gameState == "PLAYING") {
 			entitiesQuadTree = new QuadTree(
-					new Rectangle(0, 0, world.WIDTH*32, world.HEIGHT*32), 10);
+					new Rectangle(0, 0, world.WIDTH*32, world.HEIGHT*32), 1);
 			for (int i = 0; i < entities.size(); i++) {
 				Entity e = entities.get(i);
 				entitiesQuadTree.insert(e);
@@ -241,6 +241,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				e.tick();
 			}
 		} else if (gameState == "GAMEOVER") {
+			
 		}
 		ui.tick();
 	}
@@ -291,6 +292,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 		if (gameState == "MENU") {
 			menu.render(g);
+		}
+		if(entitiesQuadTree!=null) {
+			entitiesQuadTree.render(g);			
 		}
 //		Graphics2D g2d = (Graphics2D) g;
 //		double angleMouse = Math.atan2(100+25-my, 100+25-mx);

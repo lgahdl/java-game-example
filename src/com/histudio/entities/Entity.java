@@ -172,8 +172,6 @@ public class Entity {
 		String className = object.getClass().getSimpleName();
 		switch (className) {
 		default:
-			((Entity) object).onTriggerCollider(this);
-			System.out.println("Default Trigger, redirecting to:" + className);
 			break;
 		}
 	}
