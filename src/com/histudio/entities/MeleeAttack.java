@@ -95,6 +95,7 @@ public class MeleeAttack extends Entity {
 	@Override
 	public void render(Graphics g) {
 		renderCollisionBox(g);
+		renderRangeBox(g);
 		Graphics2D g2 = (Graphics2D) g;
 		int RelativePositionX = this.getX() - Camera.x;
 		int RelativePositionY = this.getY() - Camera.y;

@@ -46,7 +46,8 @@ public class QuadTree {
 		this.southwest = new QuadTree(southwestBoundary, this.capacity);
 		this.southeast = new QuadTree(southeastBoundary, this.capacity);
 		this.isDivided = true;
-		if (width / 2 == 32) {
+		if (width / 2 <= 32) {
+			System.out.println("here");
 			this.northwest.canSubdivide = false;
 			this.northeast.canSubdivide = false;
 			this.southwest.canSubdivide = false;
@@ -85,7 +86,7 @@ public class QuadTree {
 						Entity e = this.entities.get(i);
 						addEntityOnSubDivision(e);
 					}
-					this.entities = null;
+					this.entities.removeAll(this.entities);
 					this.addEntityOnSubDivision(entity);
 				}
 			} else {
@@ -115,8 +116,8 @@ public class QuadTree {
 				int rangeFinalY = range.y + range.height;
 				for (int i = 0; i < this.entities.size(); i++) {
 					Entity currentEntity = this.entities.get(i);
-					if (currentEntity.getX() >= rangeInitialX && currentEntity.getX() <= rangeFinalX) {
-						if (currentEntity.getY() >= rangeInitialY && currentEntity.getY() <= rangeFinalY) {
+					if (currentEntity.getX()+16 >= rangeInitialX && currentEntity.getX()+16 <= rangeFinalX) {
+						if (currentEntity.getY()+16 >= rangeInitialY && currentEntity.getY()+16 <= rangeFinalY) {
 							found.add(currentEntity);
 						}
 					}

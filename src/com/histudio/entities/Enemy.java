@@ -160,7 +160,6 @@ public class Enemy extends Entity {
 		case "Enemy":
 			break;
 		case "MeleeAttack":
-			System.out.println("here");
 			MeleeAttack meleeAttack = (MeleeAttack) object;
 			if(!meleeAttack.father.equals(this)) {
 				this.takeDamage(meleeAttack.damage);			

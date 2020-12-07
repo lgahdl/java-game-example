@@ -44,7 +44,6 @@ public class Entity {
 		this.height = height;
 		this.collisionBox = new CollisionBox(x + collisionXOffset, y + collisionYOffset, collisionBoxWidth,
 				collisionBoxHeight);
-		this.collisionBox.solid = true;
 		this.sprite = sprite;
 	}
 

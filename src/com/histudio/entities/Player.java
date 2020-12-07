@@ -198,7 +198,7 @@ public class Player extends Entity {
 	}
 
 	public void swordAttack() {
-		if (this.meleeAttack == null) {
+		if (this.meleeAttack == null && this.sword !=null) {
 			this.meleeAttacking = true;
 		}
 	}
@@ -326,7 +326,6 @@ public class Player extends Entity {
 				Entity currentEntity = entitiesToCheck.get(i);
 				if (currentEntity.collisionBox.solid
 						&& this.isColliding(nextPositionColliderX, currentEntity.collisionBox)) {
-					System.out.println("here1");
 					nextPositionColliderX = this.collisionBox;
 					nextPositionCollider = nextPositionColliderY;
 					speedHorizontal = 0;
@@ -334,14 +333,12 @@ public class Player extends Entity {
 				
 				if (currentEntity.collisionBox.solid
 						&& this.isColliding(nextPositionColliderY, currentEntity.collisionBox)) {
-					System.out.println("here2");
 					nextPositionColliderY = this.collisionBox;
 					nextPositionCollider = nextPositionColliderX;
 					speedVertical = 0;
 				}
 				
 				if (this.isColliding(this.collisionBox, currentEntity.collisionBox) && !currentEntity.equals(this)) {
-					System.out.println("here3");
 					currentEntity.onTriggerCollider(this);
 				}
 				
@@ -416,7 +413,6 @@ public class Player extends Entity {
 			int py = 12;
 			Fireball fireball = new Fireball(this.getX() + py, this.getY() + px, 6, 6, null, dx, dy, this.weapon.damage,
 					this);
-			Game.entities.add(fireball);
 			Game.entities.add(fireball);
 		}
 		if (mouseShoot && this.meleeAttack == null) {

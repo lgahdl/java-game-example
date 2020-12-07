@@ -45,10 +45,10 @@ public class World {
 						Game.entities.add(new Manapack(i * 32, j * 32, 32, 32, Entity.MANAPACK_EN));
 						break;
 					case 0xFF00FFFF: // CIANO
-						Game.entities.add(new Weapon(i * 32, j * 32, 32, 32, Entity.WEAPON_EN, 0));
+						Game.entities.add(new Weapon(i * 32, j * 32, 32, 32, Entity.WEAPON_EN, 1));
 						break;
 					case 0xFF404040: // GRAFITE
-						Game.entities.add(new Sword(i * 32, j * 32, 32, 32, Entity.SWORD_EN, 3));
+						Game.entities.add(new Sword(i * 32, j * 32, 32, 32, Entity.SWORD_EN, 1));
 						break;
 					case 0xFF00FF00: // VERDE
 						Game.entities.add(new Lifepack(i * 32, j * 32, 32, 32, Entity.LIFEPACK_EN));
