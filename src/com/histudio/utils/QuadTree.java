@@ -47,7 +47,6 @@ public class QuadTree {
 		this.southeast = new QuadTree(southeastBoundary, this.capacity);
 		this.isDivided = true;
 		if (width / 2 <= 32) {
-			System.out.println("here");
 			this.northwest.canSubdivide = false;
 			this.northeast.canSubdivide = false;
 			this.southwest.canSubdivide = false;

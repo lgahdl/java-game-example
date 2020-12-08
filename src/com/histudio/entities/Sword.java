@@ -24,4 +24,5 @@ public class Sword extends Entity{
 			Game.entities.remove(this);
 		}
 	}
+	
 }

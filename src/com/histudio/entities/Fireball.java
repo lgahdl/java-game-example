@@ -94,7 +94,6 @@ public class Fireball extends Entity {
 			}
 		default:
 			((Entity) object).onTriggerCollider(this);
-			System.out.println("Fireball Trigger not implemented for:" + className);
 			break;
 		}
 	}

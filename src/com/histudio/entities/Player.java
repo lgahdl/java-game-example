@@ -19,7 +19,7 @@ public class Player extends Entity {
 
 	public boolean meleeAttacking = false, isAttacking = false;
 
-	public double speedVertical = 0, speedHorizontal = 0, normalMaxSpeed = 2, runningMaxSpeed = 3, acceleration = 0.1;
+	public double speedVertical = 0, speedHorizontal = 0, normalMaxSpeed = 2, runningMaxSpeed = 3, acceleration = 0.2;
 
 	public int throwBackFrames = 0, throwBackMaxFrames = 20, throwBackAcceleration = 0;
 
@@ -198,7 +198,7 @@ public class Player extends Entity {
 	}
 
 	public void swordAttack() {
-		if (this.meleeAttack == null && this.sword !=null) {
+		if (this.meleeAttack == null && this.sword != null) {
 			this.meleeAttacking = true;
 		}
 	}
@@ -216,9 +216,9 @@ public class Player extends Entity {
 		double enemyCenterX = enemy.collisionBox.x + enemy.collisionBox.width / 2;
 		double enemyCenterY = enemy.collisionBox.y + enemy.collisionBox.height / 2;
 
-		double relativeDistX = 10 * Math.abs(playerCenterX - enemyCenterX)
+		double relativeDistX = 25 * Math.abs(playerCenterX - enemyCenterX)
 				/ (enemy.collisionBox.width / 2 + this.collisionBox.width / 2);
-		double relativeDistY = 10 * Math.abs(playerCenterY - enemyCenterY)
+		double relativeDistY = 25 * Math.abs(playerCenterY - enemyCenterY)
 				/ (enemy.collisionBox.height / 2 + this.collisionBox.height / 2);
 
 		String horizontal = playerCenterX - enemyCenterX > 0 ? "right" : "left";
@@ -229,9 +229,6 @@ public class Player extends Entity {
 
 		applyAcceleration(horizontal, acceleration * relativeDistX);
 		applyAcceleration(vertical, acceleration * relativeDistY);
-
-		System.out.println(sourceXPot);
-		System.out.println(sourceYPot);
 
 	}
 
@@ -262,11 +259,9 @@ public class Player extends Entity {
 			}
 			break;
 		case "Weapon":
-			System.out.println("Player Trigger for: Weapon");
 			break;
 		default:
 			((Entity) object).onTriggerCollider(this);
-			System.out.println("Player Trigger not implemented for:" + className);
 			break;
 		}
 
@@ -304,14 +299,20 @@ public class Player extends Entity {
 
 			if (right) {
 				applyAcceleration("right", acceleration);
+				this.lastPressedMovementKey = "right";
 			} else if (left) {
 				applyAcceleration("left", acceleration);
+				this.lastPressedMovementKey = "left";
 			}
 			if (up) {
 				applyAcceleration("up", acceleration);
+
+				this.lastPressedMovementKey = "up";
 			} else if (down) {
 				applyAcceleration("down", acceleration);
+				this.lastPressedMovementKey = "down";
 			}
+
 			CollisionBox nextPositionCollider = new CollisionBox(
 					(int) Math.round(this.collisionBox.x + speedHorizontal),
 					(int) Math.round(this.collisionBox.y + speedVertical), this.collisionBox.width,
@@ -330,19 +331,18 @@ public class Player extends Entity {
 					nextPositionCollider = nextPositionColliderY;
 					speedHorizontal = 0;
 				}
-				
+
 				if (currentEntity.collisionBox.solid
 						&& this.isColliding(nextPositionColliderY, currentEntity.collisionBox)) {
 					nextPositionColliderY = this.collisionBox;
 					nextPositionCollider = nextPositionColliderX;
 					speedVertical = 0;
 				}
-				
+
 				if (this.isColliding(this.collisionBox, currentEntity.collisionBox) && !currentEntity.equals(this)) {
 					currentEntity.onTriggerCollider(this);
 				}
-				
-				
+
 			}
 			if (Game.world.isFree(nextPositionCollider)
 					|| (!Game.world.isBorder((int) Math.round(x + speedHorizontal), (int) Math.round(y + speedVertical))
@@ -368,7 +368,7 @@ public class Player extends Entity {
 				index = 0;
 			}
 		}
-
+		applyFriction(Game.world.tiles[this.getX() / Game.world.TILE_SIZE + this.getY()].friction);
 		if (meleeAttacking && this.meleeAttack == null) {
 			shoot = false;
 			MeleeAttack meleeAttack = new MeleeAttack(this.getX(), this.getY(), 32, 32, null, this.sword.damage,
@@ -447,7 +447,6 @@ public class Player extends Entity {
 			} else {
 				speedHorizontal -= accelerationCur;
 			}
-			this.lastPressedMovementKey = "right";
 			break;
 		case "left":
 			if (this.lastPressedMovementKey == "right") {
@@ -459,7 +458,6 @@ public class Player extends Entity {
 				speedHorizontal += accelerationCur;
 			}
 
-			this.lastPressedMovementKey = "left";
 			break;
 		case "up":
 			if (this.lastPressedMovementKey == "down") {
@@ -470,21 +468,32 @@ public class Player extends Entity {
 			} else {
 				speedVertical += accelerationCur;
 			}
-			this.lastPressedMovementKey = "up";
 			break;
 		case "down":
 			if (this.lastPressedMovementKey == "up") {
-				speedHorizontal = 0.2;
+				speedVertical = 0.2;
 			}
 			if (Math.abs(speedVertical) < maxSpeed) {
 				speedVertical += accelerationCur;
 			} else {
 				speedVertical -= accelerationCur;
 			}
-			this.lastPressedMovementKey = "down";
 			break;
 		default:
 			break;
+		}
+	}
+
+	public void applyFriction(double frictionAcceleration) {
+		if (speedHorizontal > 0) {
+			speedHorizontal -= frictionAcceleration;
+		} else if (speedHorizontal < 0) {
+			speedHorizontal += frictionAcceleration;
+		}
+		if (speedVertical > 0) {
+			speedVertical -= frictionAcceleration;
+		} else if (speedVertical < 0) {
+			speedVertical += frictionAcceleration;
 		}
 	}
 

@@ -93,6 +93,26 @@ public class MeleeAttack extends Entity {
 	}
 
 	@Override
+	public void onTriggerCollider(Object object) {
+		String className = object.getClass().getSimpleName();
+		switch (className) {
+		case "Enemy":
+			Enemy e = (Enemy) object;
+			if (!e.equals(this.father)) {
+				e.takeDamage(this.damage);
+			}
+			break;
+		case "Player":
+			Player player = (Player) object;
+			if(!player.equals(this.father)) {
+				player.takeDamage(this.damage);
+			}
+		default:
+			break;
+		}
+	}
+
+	@Override
 	public void render(Graphics g) {
 		renderCollisionBox(g);
 		renderRangeBox(g);
@@ -101,8 +121,8 @@ public class MeleeAttack extends Entity {
 		int RelativePositionY = this.getY() - Camera.y;
 		switch (direction) {
 		case "up":
-			g2.drawImage(this.sprite, RelativePositionX + this.getWidth(),
-					RelativePositionY + this.getHeight(), -this.getWidth(), -this.getHeight(), null);
+			g2.drawImage(this.sprite, RelativePositionX + this.getWidth(), RelativePositionY + this.getHeight(),
+					-this.getWidth(), -this.getHeight(), null);
 			break;
 		case "down":
 			g.drawImage(this.sprite, RelativePositionX, RelativePositionY, null);

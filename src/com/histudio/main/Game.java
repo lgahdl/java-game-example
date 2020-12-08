@@ -472,8 +472,6 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 //		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 //		setPreferredSize(screenSize);
 		GraphicsConfiguration[] screenConfig = screenDevices[screen].getConfigurations();
-		System.out.println("width:" + screenConfig[0].getBounds().getWidth());
-		System.out.println("height:" + screenConfig[0].getBounds().getHeight());
 		int width = (int) screenConfig[0].getBounds().getWidth();
 		int height = (int) screenConfig[0].getBounds().getHeight();
 		setPreferredSize(new Dimension(width, height));

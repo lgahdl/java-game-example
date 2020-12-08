@@ -18,7 +18,7 @@ import com.histudio.world.World;
 
 public class Enemy extends Entity {
 
-	private int speed = 2;
+	public double speedVertical = 0, speedHorizontal = 0, normalMaxSpeed = 2, runningMaxSpeed = 3, acceleration = 0.2;
 
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 4;
 
@@ -39,6 +39,8 @@ public class Enemy extends Entity {
 	public boolean isActive = false;
 
 	protected List<Node> path;
+	
+	private List<Entity> entitiesToCheck;
 
 	public Enemy(int x, int y, int width, int height, BufferedImage sprite) {
 		super(x, y, width, height, null);
@@ -55,10 +57,10 @@ public class Enemy extends Entity {
 
 	public void tick() {
 
-		List<Entity> entitiesToCheck = Game.entitiesQuadTree.query(this.collisionBox.range);
+		 entitiesToCheck = Game.entitiesQuadTree.query(this.collisionBox.range);
 
 		for (int i = 0; i < entitiesToCheck.size(); i++) {
-			
+
 			Entity e = entitiesToCheck.get(i);
 			if (!e.equals(this)) {
 				if (this.isColliding(this.collisionBox, e.collisionBox)) {
@@ -131,9 +133,11 @@ public class Enemy extends Entity {
 	}
 
 	public void takeDamage(int damage) {
-		Sound.enemyDamaged.play();
-		life = life - damage;
-		this.isDamaged = true;
+		if (!isDamaged) {
+			Sound.enemyDamaged.play();
+			life = life - damage;
+			this.isDamaged = true;
+		}
 //		Game.fireballs.remove(i);
 		World.generateParticles(200, this.getX(), this.getY());
 		return;
@@ -161,13 +165,12 @@ public class Enemy extends Entity {
 			break;
 		case "MeleeAttack":
 			MeleeAttack meleeAttack = (MeleeAttack) object;
-			if(!meleeAttack.father.equals(this)) {
-				this.takeDamage(meleeAttack.damage);			
+			if (!meleeAttack.father.equals(this)) {
+				this.takeDamage(meleeAttack.damage);
 			}
 			break;
 		default:
 			((Entity) object).onTriggerCollider(this);
-			System.out.println("Enemy Trigger not configured for:" + className);
 			break;
 		}
 	}
@@ -176,61 +179,111 @@ public class Enemy extends Entity {
 		if (path != null) {
 
 			if (path.size() > 0) {
-
-				CollisionBox nextPositionCollider = this.collisionBox;
 				Vector2i target = path.get(path.size() - 1).tile;
+
 				if (x < target.x * 32) {
-					// GOING RIGHT
-					nextPositionCollider = new CollisionBox(this.collisionBox.x + (int) Math.round(speed),
-							this.collisionBox.y, this.collisionBox.width, this.collisionBox.height);
-					if (Game.world.isFree(nextPositionCollider)) {
-						x += speed;
-						moved = true;
-						this.collisionBox = nextPositionCollider;
-						if (canChangeDirection) {
-							direction = "right";
-							canChangeDirection = false;
-						} else {
-							canChangeDirection = true;
-						}
-					}
+					applyAcceleration("right", acceleration);
 				} else if (x > target.x * 32) {
-					// GOING LEFT
-					nextPositionCollider = new CollisionBox(this.collisionBox.x - (int) Math.round(speed),
-							this.collisionBox.y, this.collisionBox.width, this.collisionBox.height);
-					if (Game.world.isFree(nextPositionCollider)) {
-						x -= speed;
-						moved = true;
-						this.collisionBox = nextPositionCollider;
-						if (canChangeDirection) {
-							direction = "left";
-							canChangeDirection = false;
-						} else {
-							canChangeDirection = true;
-						}
-					}
+					applyAcceleration("left", acceleration);
 				}
-				if (y < target.y * 32) {
-					// GOING DOWN
-					nextPositionCollider = new CollisionBox(this.collisionBox.x,
-							this.collisionBox.y + (int) Math.round(speed), this.collisionBox.width,
-							this.collisionBox.height);
-					if (Game.world.isFree(nextPositionCollider)) {
-						y += speed;
-						moved = true;
-						this.collisionBox = nextPositionCollider;
-					}
-				} else if (y > target.y * 32) {
-					// GOING UP
-					nextPositionCollider = new CollisionBox(this.collisionBox.x,
-							this.collisionBox.y - (int) Math.round(speed), this.collisionBox.width,
-							this.collisionBox.height);
-					if (Game.world.isFree(nextPositionCollider)) {
-						y -= speed;
-						moved = true;
-						this.collisionBox = nextPositionCollider;
-					}
+				if (y > target.y * 32) {
+					applyAcceleration("up", acceleration);
+
+				} else if (y < target.y * 32) {
+					applyAcceleration("down", acceleration);
 				}
+
+				CollisionBox nextPositionCollider = new CollisionBox(
+						(int) Math.round(this.collisionBox.x + speedHorizontal),
+						(int) Math.round(this.collisionBox.y + speedVertical), this.collisionBox.width,
+						this.collisionBox.height);
+				CollisionBox nextPositionColliderX = new CollisionBox(
+						(int) Math.round(this.collisionBox.x + speedHorizontal), this.collisionBox.y,
+						this.collisionBox.width, this.collisionBox.height);
+				CollisionBox nextPositionColliderY = new CollisionBox(this.collisionBox.x,
+						(int) Math.round(this.collisionBox.y + speedVertical), this.collisionBox.width,
+						this.collisionBox.height);
+				for (int i = 0; i < entitiesToCheck.size(); i++) {
+					Entity currentEntity = entitiesToCheck.get(i);
+					if (currentEntity.collisionBox.solid
+							&& this.isColliding(nextPositionColliderX, currentEntity.collisionBox)) {
+						nextPositionColliderX = this.collisionBox;
+						nextPositionCollider = nextPositionColliderY;
+						speedHorizontal = 0;
+					}
+
+					if (currentEntity.collisionBox.solid
+							&& this.isColliding(nextPositionColliderY, currentEntity.collisionBox)) {
+						nextPositionColliderY = this.collisionBox;
+						nextPositionCollider = nextPositionColliderX;
+						speedVertical = 0;
+					}
+
+					if (this.isColliding(this.collisionBox, currentEntity.collisionBox)
+							&& !currentEntity.equals(this)) {
+						currentEntity.onTriggerCollider(this);
+					}
+
+				}
+				if (Game.world.isFree(nextPositionCollider)) {
+					moved = true;
+					this.setX((int) Math.round(x + speedHorizontal));
+					this.setY((int) Math.round(y + speedVertical));
+					this.collisionBox = nextPositionCollider;
+				}
+
+//				if (x < target.x * 32) {
+//					// GOING RIGHT
+//					nextPositionCollider = new CollisionBox(this.collisionBox.x + (int) Math.round(speed),
+//							this.collisionBox.y, this.collisionBox.width, this.collisionBox.height);
+//					if (Game.world.isFree(nextPositionCollider)) {
+//						x += speed;
+//						moved = true;
+//						this.collisionBox = nextPositionCollider;
+//						if (canChangeDirection) {
+//							direction = "right";
+//							canChangeDirection = false;
+//						} else {
+//							canChangeDirection = true;
+//						}
+//					}
+//				} else if (x > target.x * 32) {
+//					// GOING LEFT
+//					nextPositionCollider = new CollisionBox(this.collisionBox.x - (int) Math.round(speed),
+//							this.collisionBox.y, this.collisionBox.width, this.collisionBox.height);
+//					if (Game.world.isFree(nextPositionCollider)) {
+//						x -= speed;
+//						moved = true;
+//						this.collisionBox = nextPositionCollider;
+//						if (canChangeDirection) {
+//							direction = "left";
+//							canChangeDirection = false;
+//						} else {
+//							canChangeDirection = true;
+//						}
+//					}
+//				}
+//				if (y < target.y * 32) {
+//					// GOING DOWN
+//					nextPositionCollider = new CollisionBox(this.collisionBox.x,
+//							this.collisionBox.y + (int) Math.round(speed), this.collisionBox.width,
+//							this.collisionBox.height);
+//					if (Game.world.isFree(nextPositionCollider)) {
+//						y += speed;
+//						moved = true;
+//						this.collisionBox = nextPositionCollider;
+//					}
+//				} else if (y > target.y * 32) {
+//					// GOING UP
+//					nextPositionCollider = new CollisionBox(this.collisionBox.x,
+//							this.collisionBox.y - (int) Math.round(speed), this.collisionBox.width,
+//							this.collisionBox.height);
+//					if (Game.world.isFree(nextPositionCollider)) {
+//						y -= speed;
+//						moved = true;
+//						this.collisionBox = nextPositionCollider;
+//					}
+//				}
 				int tx32 = target.x * 32;
 				int ty32 = target.y * 32;
 				if ((this.getX() == tx32 || this.getX() + 1 == tx32 || this.getX() - 1 == tx32)
@@ -239,6 +292,55 @@ public class Enemy extends Entity {
 				}
 
 			}
+		}
+	}
+
+	public void applyAcceleration(String direction, double accelerationCur) {
+		double maxSpeed = normalMaxSpeed;
+		switch (direction) {
+		case "right":
+			if (speedHorizontal<-0.2) {
+				speedHorizontal = -0.2;
+			}
+			if (Math.abs(speedHorizontal) < maxSpeed) {
+				speedHorizontal += accelerationCur;
+			} else {
+				speedHorizontal -= accelerationCur;
+			}
+			break;
+		case "left":
+			if (speedHorizontal>0.2) {
+				speedHorizontal = 0.2;
+			}
+			if (Math.abs(speedHorizontal) < maxSpeed) {
+				speedHorizontal -= accelerationCur;
+			} else {
+				speedHorizontal += accelerationCur;
+			}
+
+			break;
+		case "up":
+			if (speedVertical < -0.2) {
+				speedVertical = -0.2;
+			}
+			if (Math.abs(speedVertical) < maxSpeed) {
+				speedVertical -= accelerationCur;
+			} else {
+				speedVertical += accelerationCur;
+			}
+			break;
+		case "down":
+			if (speedVertical > 0.2) {
+				speedVertical = 0.2;
+			}
+			if (Math.abs(speedVertical) < maxSpeed) {
+				speedVertical += accelerationCur;
+			} else {
+				speedVertical -= accelerationCur;
+			}
+			break;
+		default:
+			break;
 		}
 	}
 
@@ -263,6 +365,5 @@ public class Enemy extends Entity {
 			}
 		}
 	}
-	
 
 }
