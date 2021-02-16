@@ -15,7 +15,8 @@ import com.histudio.utils.CollisionBox;
 public class World {
 
 	public static Tile[] tiles;
-	public int WIDTH, HEIGHT;
+	public static int WIDTH;
+	public static int HEIGHT;
 	public static final int TILE_SIZE = 32;
 
 	public World(String path) {

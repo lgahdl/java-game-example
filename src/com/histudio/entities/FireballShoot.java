@@ -78,7 +78,7 @@ public class FireballShoot extends Entity {
 		g.fillOval(this.getX() - Camera.x, this.getY() - Camera.y, this.width, this.height);
 	}
 
-	private void renderRangeBox(Graphics g) {
+	public void renderRangeBox(Graphics g) {
 		g.fillRect(this.range.x - Camera.x, this.range.y - Camera.y, this.range.width, this.range.height);
 	}
 

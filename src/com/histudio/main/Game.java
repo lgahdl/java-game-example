@@ -54,8 +54,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	private Thread thread;
 	private boolean isRunning;
 	public static String displayMode = "WINDOW"; // FULLSCREEN or WINDOW
-	private static int WIDTH = 420;
-	private static int HEIGHT = 237;
+	public static int WIDTH = 420;
+	public static int HEIGHT = 237;
 
 	public static int selectedScreen = 0;
 
